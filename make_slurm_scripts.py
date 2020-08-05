@@ -54,7 +54,7 @@ if (options.slurm_name is None):
         options.slurm_name = region
 
 
-work_dir = Path(os.getcwd()) #'/cosma5/data/durham/dc-sedg2/covid/june_runs'
+work_dir = Path( os.getcwd() ) #'/cosma5/data/durham/dc-sedg2/covid/june_runs'
 stdout_dir = work_dir / 'stdout'
 script_dir = Path('submit_scripts')
 

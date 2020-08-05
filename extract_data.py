@@ -30,7 +30,7 @@ names = gp.all_names
 
 lhs_array = gp.generate_lhs(num_samples=num_samples)
 
-work_dir = Path( os.get_cwd() )
+work_dir = Path( os.getcwd() )
 
 # Sometimes all of the n_threads catch on this point at once,
 # so it tries to make dir that already exists - not good.

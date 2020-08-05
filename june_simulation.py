@@ -11,6 +11,8 @@ import pandas as pd
 import json
 #import seaborn as sns
 
+from pathlib import Path
+
 ## important, remove
 from june import World
 from june.demography.geography import Geography
@@ -48,7 +50,7 @@ def print_memory_status(when='now'):
 
 # parameters
 
-work_dir = os.getcwd()
+work_dir = Path( os.getcwd() )
 
 print('start')
 
