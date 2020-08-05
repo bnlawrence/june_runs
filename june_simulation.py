@@ -48,8 +48,7 @@ def print_memory_status(when='now'):
 
 # parameters
 
-work_dir = f'/cosma5/data/durham/dc-sedg2/covid/june_runs'
-
+work_dir = os.getcwd()
 
 print('start')
 
@@ -57,11 +56,12 @@ print('start')
 
 parser = OptionParser()
 parser.add_option('--test',action='store',default=-99) # ignore this.
+parser.add_option('--num_samples',action='store',default=250)
 (options,args) = parser.parse_args()
 
 
 #lhs_path = f'{work_dir}/lhs_array-constrained-26-06-2020.npy'
-lhs_array = gp.generate_lhs(num_samples=250)
+lhs_array = gp.generate_lhs(num_samples=options.num_samples)
 
 index = int(args[0])
 iteration = int(args[1])
@@ -70,8 +70,11 @@ if len(args) == 3:
 else:
     region_name = 'london'
 
-CONFIG_PATH = f'{work_dir}/config.yaml'
+CONFIG_PATH = work_dir / 'config.yaml'
 world_file = f'/cosma6/data/dp004/dc-quer1/june_worlds/up_to_date/{region_name}.hdf5'
+
+if os.path.exists(world_file) is False:
+    raise IOError(f'No world_file {world_file}')
 
 if os.path.exists(CONFIG_PATH) is False:
     raise IOError('No config!')
@@ -82,19 +85,19 @@ print(index,'parameters',parameters)
 
 print(f'there are {len(parameters.keys())} params!')
 
-SAVE_PATH = f'{work_dir}/june_results/{region_name}/iteration_{iteration}/run_{index:03d}'
-summary_dir = f'{work_dir}/june_results/{region_name}/summaries/iteration_{iteration}'
+SAVE_PATH = work_dir / Path(f'june_results/{region_name}/iteration_{iteration}/run_{index:03d}')
+summary_dir = work_dir / Path(f'june_results/{region_name}/summaries/iteration_{iteration}')
 
 if os.path.exists(SAVE_PATH) is False:
     print(f'make dir {SAVE_PATH}')
     os.makedirs(SAVE_PATH)
 else:
     print(f'dir exists {SAVE_PATH}!')
-    if os.path.exists(f'{SAVE_PATH}/logger.hdf5'):
+    if os.path.exists(SAVE_PATH / 'logger.hdf5'):
         print('logger exists!! are you sure to overwrite?')
 
 print(f'SAVE TO {SAVE_PATH}')
-with open(SAVE_PATH + '/parameters.json', 'w') as f:
+with open(SAVE_PATH / 'parameters.json', 'w') as f:
     json.dump(parameters,f)
 
 
@@ -103,7 +106,7 @@ if os.path.exists(summary_dir) is False:
         os.makedirs(summary_dir)
         print(f'make summary dir {summary_dir}')
     except:
-        print('Cant make {summary_dir}')
+        print(f'Cant make {summary_dir}')
 else:
     print(f'summary dir exists {summary_dir}')
 
@@ -122,7 +125,7 @@ health_index_generator = HealthIndexGenerator.from_file(
     asymptomatic_ratio=asymptomatic_ratio
 )
 
-transmission_config = 'defaults/transmission/correction_nature.yaml'  
+transmission_config = Path('defaults/transmission/correction_nature.yaml')
 
 selector = InfectionSelector.from_file(
     transmission_config_path=paths.configs_path / transmission_config,    

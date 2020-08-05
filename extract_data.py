@@ -8,14 +8,14 @@ import pandas as pd
 import shutil
 import psutil
 
+from optparse import OptionParser
+from multiprocessing import Pool
+from pathlib import Path
+
 from june.logger.read_logger import ReadLogger
 from june.infection import SymptomTag
 
 import generate_parameters as gp
-
-from optparse import OptionParser
-from multiprocessing import Pool
-
 import time
 
 
@@ -30,7 +30,7 @@ names = gp.all_names
 
 lhs_array = gp.generate_lhs(num_samples=num_samples)
 
-work_dir = f'/cosma7/data/dp004/dc-quer1/june_runs'
+work_dir = Path( os.get_cwd() )
 
 # Sometimes all of the n_threads catch on this point at once,
 # so it tries to make dir that already exists - not good.
@@ -56,15 +56,14 @@ def do_extract(
         raise IOError(f'No logger dir {logger_dir}!')
 
     if summary_dir is None:
-        logger_end = [i for i in logger_dir.split('/') if len(i) > 0][-1]
-        summary_dir = f'{work_dir}/june_results/summary/{logger_end}'
+        summary_dir = logger_dir
 
     if os.path.exists(summary_dir) is False:
         try:
             os.makedirs(summary_dir)
             print('made summary_dir')
         except:
-            print('dir {summary_dir} already exists?')
+            print(f'dir {summary_dir} already exists?')
 
     print(f'save at {summary_dir}')
 
@@ -75,15 +74,15 @@ def do_extract(
         pass
     
 
-    inf_loc_path = f'{summary_dir}/infections_locations_{index}.csv'
-    world_summary_path = f'{summary_dir}/world_summary_{index}.csv'
-    daily_world_summary_path = f'{summary_dir}/daily_world_summary_{index}.csv'
-    #age_summary_path = f'{summary_dir}/age_summary_{ii}.csv'
-    strat_age_summary_path = f'{summary_dir}/strat_age_summary_{index}.csv'
-    daily_strat_age_summary_path = f'{summary_dir}/daily_strat_age_summary_{index}.csv'
+    inf_loc_path = summary_dir / f'infections_locations_{index}.csv'
+    world_summary_path = summary_dir / f'world_summary_{index}.csv'
+    daily_world_summary_path = summary_dir / f'daily_world_summary_{index}.csv'
+    #age_summary_path = summary_dir / f'age_summary_{ii}.csv'
+    strat_age_summary_path = summary_dir / f'strat_age_summary_{index}.csv'
+    daily_strat_age_summary_path = summary_dir / f'daily_strat_age_summary_{index}.csv'
 
     #fine_age_summary_path = f'{summary_dir}/fine_age_summary_{ii}.csv'
-    hospital_df_path = f'{summary_dir}/hospital_summary_{index}.csv'
+    hospital_df_path = summary_dir / f'hospital_summary_{index}.csv'
 
 
     print('logger exists?:',os.path.exists(logger_dir+'/logger.hdf5'))
@@ -222,7 +221,7 @@ def do_extract(
 
     ###=========dump the parameters as json========###
 
-    json_path = f'{summary_dir}/parameters_{index}.json'
+    json_path = summary_dir / f'parameters_{index}.json'
     params.iloc[ii].to_json(json_path)
 
     t2 = time.time()#

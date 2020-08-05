@@ -2,6 +2,7 @@ import numpy as np
 import os
 
 from optparse import OptionParser
+from pathlib import Path
 
 parser = OptionParser()
 # Run information
@@ -53,12 +54,12 @@ if (options.slurm_name is None):
         options.slurm_name = region
 
 
-work_dir = os.getcwd() #'/cosma5/data/durham/dc-sedg2/covid/june_runs'
-stdout_dir = f'{work_dir}/stdout'
-script_dir = f'submit_scripts'
+work_dir = Path(os.getcwd()) #'/cosma5/data/durham/dc-sedg2/covid/june_runs'
+stdout_dir = work_dir / 'stdout'
+script_dir = Path('submit_scripts')
 
-simulation_script = f'{work_dir}/{options.script}'
-parallel_tasks = f'{work_dir}/submit_scripts/parallel_tasks'
+simulation_script = work_dir / options.script
+parallel_tasks = work_dir / script_dir / 'parallel_tasks'
 
 if os.path.exists(stdout_dir) is False:
     os.makedirs(stdout_dir)
@@ -78,13 +79,15 @@ for i,(low,high) in enumerate(zip(index_list[:-1],index_list[1:])):
 
     ntasks = high-low
 
+    stdout_name = stdout_dir / f'{options.slurm_name}_{iteration}_{i:03d}.%J'
+
     script_lines = [
         '#!/bin/bash -l',
         '',
         f'#SBATCH --ntasks {options.N_cores}',
         f'#SBATCH -J {options.job_name}_{iteration}_{i:03d}',
-        f'#SBATCH -o {stdout_dir}/{options.slurm_name}_{iteration}_{i:03d}.%J.out',
-        f'#SBATCH -e {stdout_dir}/{options.slurm_name}_{iteration}_{i:03d}.%J.err',
+        f'#SBATCH -o {stdout_name}.out',
+        f'#SBATCH -e {stdout_name}.err',
         f'#SBATCH -p {options.partition}',
         f'#SBATCH -A {options.project} #e.g. dp004',
         f'#SBATCH --exclusive',
@@ -102,13 +105,13 @@ for i,(low,high) in enumerate(zip(index_list[:-1],index_list[1:])):
     ]
 
     script_name = f'{options.slurm_name}_{iteration}_{i:03d}.sh'
-    script_path = f'{work_dir}/{script_dir}/{script_name}'
+    script_path = work_dir / script_dir / script_name
 
     slurm_scripts.append(script_name)
 
     if i == 0:
         print(f'\nwill submit cmd \n {PYTHON_CMD}')
-        print(f'\nsaved scripts at eg. \n    ./{script_dir}/{script_name}')
+        print(f'\nsaved scripts at eg. \n    {script_dir / script_name}')
 
     with open(script_path,'w+') as script:
         for line in script_lines:
@@ -122,13 +125,15 @@ for i,(low,high) in enumerate(zip(index_list[:-1],index_list[1:])):
 
 if options.submit_several_name is None:
     options.submit_several_name = (
-        f'./submit_{options.region}_several_{options.iteration}.sh'
+        Path(f'submit_{options.region}_several_{options.iteration}.sh')
     )
+
+    
 
 with open(options.submit_several_name,'w+') as f:
     f.write('#!/bin/bash' + '\n\n')
     for slurm_script in slurm_scripts:
-        line = f'sbatch {script_dir}/{slurm_script}'
+        line = f'sbatch {work_dir / script_dir / slurm_script}'
         f.write(line + '\n')
 
 print(f'\nsubmit all scripts with:\n     \033[35mbash {options.submit_several_name}\033[0m')
