@@ -1,0 +1,40 @@
+parallel_tasks
+--------------
+
+This is a C program which you can use to execute multiple serial jobs
+as a single MPI job. It keeps its own queue internally so if you have
+more jobs than cores any core which finishes its current job can
+immediately start another one.
+
+To compile it you need to make a copy of this directory, make sure you
+have an MPI module loaded (any version of MPI should be ok), and then
+just run 'make' in the source directory. This will create the
+executable 'parallel_tasks'.
+
+To use it you would run
+
+mpirun -np <numprocs> ./parallel_tasks <first> <last> <command>
+
+where first and last are the range of job indexes to run and the
+command is a C format string which the job index gets substituted
+into. numprocs determines how many jobs are run simultaneously.
+
+As an example, this directory also contains a small python script
+hello.py which takes a single integer parameter and writes out a
+message. To run this script 10 times using 4 processors you would do
+something like this:
+
+mpirun -np 4 ./parallel_tasks 0 9 "python ./hello.py %d"
+
+This will repeat the command "python ./hello.py %d" ten times,
+substituting in the job index from 0 to 9 each time. Up to four
+instances of python will run simultaneously.
+
+There is also a batch script (batch_script.csh) which shows how to use
+the program in a batch job.
+
+The program is not very efficient if the individual jobs are short
+(~10 seconds or less) because it only checks if new jobs need to be
+started at ~1 sec intervals. Also, the command might not be run using
+the shell you expect because it uses a C system() call, which always
+uses /bin/sh on linux.
