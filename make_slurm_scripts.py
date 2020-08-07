@@ -92,6 +92,8 @@ for i,(low,high) in enumerate(zip(index_list[:-1],index_list[1:])):
         f'#SBATCH -A {options.project} #e.g. dp004',
         f'#SBATCH --exclusive',
         f'#SBATCH -t 72:00:00',
+        f'#SBATCH --mail-type=END',
+        f'#SBATCH --mail-user aidan.sedgewick@durham.ac.uk',
         f'',
         f'module purge',
         f'# load the modules used to build your program.',

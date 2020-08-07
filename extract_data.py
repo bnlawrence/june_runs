@@ -85,7 +85,7 @@ def do_extract(
     hospital_df_path = summary_dir / f'hospital_summary_{index}.csv'
 
 
-    print('logger exists?:',os.path.exists(logger_dir+'/logger.hdf5'))
+    print('logger exists?:',os.path.exists(logger_dir / 'logger.hdf5'))
     print(logger_dir)
 
     try:
@@ -220,10 +220,10 @@ def do_extract(
 
 
     ###=========dump the parameters as json========###
-
+    '''
     json_path = summary_dir / f'parameters_{index}.json'
     params.iloc[ii].to_json(json_path)
-
+    '''
     t2 = time.time()#
 
     print(f'{index}\' s summary files saved in {(t2-t1)/60.} min')
@@ -243,15 +243,15 @@ if __name__ == "__main__":
     (options,args) = parser.parse_args()
 
     print('test "do_extract" on 0')
-    """
 
-    work_dir = f'/cosma5/data/durham/dc-sedg2/covid'
+    work_dir = Path( os.getcwd() )
 
-    do_extract(0,f'{work_dir}/june_results/r11_policytests/Run_1/policy_q14_lm8',
-                summary_dir = f'{work_dir}/june_results/r11_policytests/summaries/Run_1/',
+    do_extract(0,work_dir / Path('june_results_20200806/northeast_yorkshire/iteration_1/run_000/'),
+
+                summary_dir = work_dir / 'test_out',
                 iteration=1
     )
-        
+    """
     do_extract(1,f'{work_dir}/june_results/r11_policytests/Run_1/policy_q14_lm2',
                 summary_dir = f'{work_dir}/june_results/r11_policytests/summaries/Run_1/',
                 iteration=1

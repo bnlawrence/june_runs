@@ -127,7 +127,7 @@ health_index_generator = HealthIndexGenerator.from_file(
     asymptomatic_ratio=asymptomatic_ratio
 )
 
-transmission_config = Path('defaults/transmission/correction_nature.yaml')
+transmission_config = Path('defaults/transmission/XNExp.yaml')
 
 selector = InfectionSelector.from_file(
     transmission_config_path=paths.configs_path / transmission_config,    
