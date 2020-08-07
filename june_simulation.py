@@ -162,7 +162,7 @@ policies = Policies.from_file()
 
 
 betas_to_reduce = [
-    'pub', 'gym', 'grocery', 'cinema', 'commute_unit', 'commute_city_unit', 'hospital', 
+    'pub', 'grocery', 'cinema', 'commute_unit', 'commute_city_unit', 'hospital', 
     'care_home', 'company', 'school', 'university'
 ]
 
