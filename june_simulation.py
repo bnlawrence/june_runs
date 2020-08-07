@@ -166,12 +166,24 @@ betas_to_reduce = [
     'care_home', 'company', 'school', 'university'
 ]
 
-beta_factor_1 = 0.81234
-beta_factor_2 = 0.67778
+
+if 'beta_factor_1' in parameters.keys():
+    beta_factor_1 = parameters['beta_factor_1']
+    print(f'beta_factor_1 {beta_factor_1}')
+else:
+    beta_factor_1 = 0.8
+    print('No beta_factor_1!')
+
+if 'beta_factor_2' in parameters.keys():
+    beta_factor_2 = beta_factor_1*parameters['beta_factor_2']
+    print(f'beta_factor_2 {beta_factor_2}')
+else:
+    beta_factor_2 = 0.8
+    print('No beta_factor_2!')
 
 soc_dist1 = {
     'beta_factors' : {key:beta_factor_1 for key in betas_to_reduce}
-}
+} # dict key is **beta_factorS** plural
 
 gp.modify_policy(policies,'social_distancing',number=1,values=soc_dist1)
 
