@@ -175,8 +175,8 @@ soc_dist1 = {
 
 gp.modify_policy(policies,'social_distancing',number=1,values=soc_dist1)
 
-soc_dist2 = soc_dist2 = {
-    'beta_factors' : {key:beta_factor_1 for key in betas_to_reduce}
+soc_dist2 = {
+    'beta_factors' : {key:beta_factor_2 for key in betas_to_reduce}
 }
 
 gp.modify_policy(policies,'social_distancing',number=2,values=soc_dist2)

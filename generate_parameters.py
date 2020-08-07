@@ -36,7 +36,8 @@ assert set(beta_names) == set(beta_bounds.keys())
 extra_names = [
     'alpha_physical',
     'asymptomatic_ratio',
-    #'beta_factors',
+    'beta_factors_1',
+    'beta_factors_2',
     'seed_strength',
 #    'household_complacency'
 ]
@@ -44,7 +45,8 @@ extra_names = [
 extra_bounds = {                
     'alpha_physical' : (1.8,3.0),
     'asymptomatic_ratio' : (0.05,0.4),
-    #'beta_factors' : (0.2,0.6),
+    'beta_factors_1' : (0.2,0.6),
+    'beta_factors_2' : (0.2,0.6),
     'seed_strength' : (0.5,1.0),
     #'household_complacency' : (0.1,0.9)
 }
@@ -139,7 +141,7 @@ def modify_policy(policies,policy,number=None,values=None):
     
     set_values(pol.__dict__,values)
 
-    print('modified {policy} {number}: {pol.__dict__}')    
+    print(f'modified {policy} {number}: {pol.__dict__}')    
 
 
     return None
