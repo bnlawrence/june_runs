@@ -160,6 +160,27 @@ print(interaction.beta)
 #policies = Policies.from_file("/cosma6/data/dp004/dc-quer1/june_runs/london_policy.yaml")
 policies = Policies.from_file()
 
+
+betas_to_reduce = [
+    'pub', 'gym', 'grocery', 'cinema', 'commute_unit', 'commute_city_unit', 'hospital', 
+    'care_home', 'company', 'school', 'university'
+]
+
+beta_factor_1 = 0.81234
+beta_factor_2 = 0.67778
+
+soc_dist1 = {
+    'beta_factors' : {key:beta_factor_1 for key in betas_to_reduce}
+}
+
+gp.modify_policy(policies,'social_distancing',number=1,values=soc_dist1)
+
+soc_dist2 = soc_dist2 = {
+    'beta_factors' : {key:beta_factor_1 for key in betas_to_reduce}
+}
+
+gp.modify_policy(policies,'social_distancing',number=2,values=soc_dist2)
+
 ###==============Load the world==================###
 
 #world_file = "/cosma7/data/dp004/dc-quer1/JUNE/scripts/tests.hdf5"

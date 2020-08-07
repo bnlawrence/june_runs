@@ -111,6 +111,43 @@ def set_beta_factors(parameters, policies):
             policies.beta_factor[key] = parameters['beta_factors']
     return policies
 
+
+def set_values(pol_dict,vals_dict):
+    for k,v in vals_dict.items():
+        if type(v) is dict:
+            set_values(pol_dict[k],v)
+        else:
+            pol_dict[k] = v
+
+def modify_policy(policies,policy,number=None,values=None):
+    relevant_policies = []
+    for p in policies:
+        spec = p.get_spec()
+        if spec == policy:
+            relevant_policies.append(p)
+
+    if len(relevant_policies) == 0:
+        print(f'No policy {policy} in policies!')
+
+    if number is None:
+        if len(relevant_policies) > 1:
+            raise ValueError(
+            f'there are {len(relevant_policies)} instances of {policy} - provide number=1 (eg)')
+        pol = relevant_policies[0]
+    else:
+        pol = relevant_policies[ number-1 ]  
+    
+    set_values(pol.__dict__,values)
+
+    print('modified {policy} {number}: {pol.__dict__}')    
+
+
+    return None
+
+    
+            
+
+
 if __name__ == "__main__":
     num_samples = 500 
     lhs_array = generate_lhs(num_samples, 1)
