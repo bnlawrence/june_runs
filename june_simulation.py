@@ -58,7 +58,13 @@ print('start')
 
 parser = OptionParser()
 parser.add_option('--test',action='store',default=-99) # ignore this.
-parser.add_option('--num_samples',action='store',default=250)
+parser.add_option('--num_samples',dest='num_samples',action='store',default=250)
+parser.add_option('--world_dir',dest='world_dir',action='store',
+    default=f'/cosma6/data/dp004/dc-quer1/june_worlds/up_to_date/'
+)
+parser.add_option('--results_dir',dest='results_dir',action='store',
+    default='june_results'
+)
 (options,args) = parser.parse_args()
 
 
@@ -73,7 +79,9 @@ else:
     region_name = 'london'
 
 CONFIG_PATH = work_dir / 'config.yaml'
-world_file = f'/cosma6/data/dp004/dc-quer1/june_worlds/up_to_date/{region_name}.hdf5'
+
+world_dir = Path(options.world_dir)
+world_file = world_dir / f'{region_name}.hdf5'
 
 if os.path.exists(world_file) is False:
     raise IOError(f'No world_file {world_file}')
@@ -87,8 +95,8 @@ print(index,'parameters',parameters)
 
 print(f'there are {len(parameters.keys())} params!')
 
-SAVE_PATH = work_dir / Path(f'june_results/{region_name}/iteration_{iteration}/run_{index:03d}')
-summary_dir = work_dir / Path(f'june_results/{region_name}/summaries/iteration_{iteration}')
+SAVE_PATH = work_dir / Path(f'{options.results_dir}/{region_name}/iteration_{iteration}/run_{index:03d}')
+summary_dir = work_dir / Path(f'{options.results_dir}/{region_name}/summaries/iteration_{iteration}')
 
 if os.path.exists(SAVE_PATH) is False:
     print(f'make dir {SAVE_PATH}')
@@ -126,6 +134,7 @@ else:
 health_index_generator = HealthIndexGenerator.from_file(
     asymptomatic_ratio=asymptomatic_ratio
 )
+
 
 transmission_config = Path('defaults/transmission/XNExp.yaml')
 
@@ -175,7 +184,7 @@ else:
     print('No beta_factor_1!')
 
 if 'beta_factor_2' in parameters.keys():
-    beta_factor_2 = beta_factor_1*parameters['beta_factor_2']
+    beta_factor_2 = beta_factor_1*parameters['beta_factor_2'] # so b1 > b2 always
     print(f'beta_factor_2 {beta_factor_2}')
 else:
     beta_factor_2 = 0.8
@@ -192,6 +201,19 @@ soc_dist2 = {
 }
 
 gp.modify_policy(policies,'social_distancing',number=2,values=soc_dist2)
+
+if 'household_compliance_2' in parameters.keys():
+    household_compliance_2 = parameters['household_compliance_2']
+else:
+    print('no household_compliance_2!')
+    household_compliance_2 = 0.6
+
+quar2 = {'household_compliance' : household_compliance_2}
+
+gp.modify_policy(policies,'quarantine',number=2,values=quar2)
+
+#for p in policies:
+    #print(p.__dict__)
 
 ###==============Load the world==================###
 

@@ -17,18 +17,20 @@ beta_names = [
     'university'
 ]
 
+f = 1.
+
 beta_bounds = { 
-    'pub'       : (0.01, 0.25),
-    'grocery'   : (0.01, 0.25),
-    'cinema'    : (0.01, 0.25),
-    'commute_unit' : (0.01, 0.5),
-    'commute_city_unit' : (0.01, 0.5),
-    'hospital'  : (0.05,0.5),
-    'care_home' : (0.05, 1.),
-    'company'   : (0.05, 0.5),
-    'school'    : (0.05, 0.5),
-    'household' : (0.05, 0.5),
-    'university': (0.01, 0.5),
+    'pub'       : (f*0.01, f*0.25),
+    'grocery'   : (f*0.01, f*0.25),
+    'cinema'    : (f*0.01, f*0.25),
+    'commute_unit' : (f*0.01, f*0.5),
+    'commute_city_unit' : (f*0.01, f*0.5),
+    'hospital'  : (f*0.05, f*0.5),
+    'care_home' : (f*0.05, f*1.),
+    'company'   : (f*0.05, f*0.5),
+    'school'    : (f*0.05, f*0.5),
+    'household' : (f*0.05, f*0.5),
+    'university': (f*0.01, f*0.5),
 }
 
 assert set(beta_names) == set(beta_bounds.keys())
@@ -39,7 +41,7 @@ extra_names = [
     'beta_factor_1',
     'beta_factor_2',
     'seed_strength',
-#    'household_complacency'
+    'household_compliance_2'
 ]
 
 extra_bounds = {                
@@ -48,7 +50,7 @@ extra_bounds = {
     'beta_factor_1' : (0.3,0.9),
     'beta_factor_2' : (0.3,0.9),
     'seed_strength' : (0.5,1.3),
-    #'household_complacency' : (0.1,0.9)
+    'household_compliance_2' : (0.2,0.8)
 }
 
 assert set(extra_names) == set(extra_bounds.keys())

@@ -25,6 +25,10 @@ parser.add_option('--stdout',dest='stdout_file',action='store',default='stdout')
 # submit several
 parser.add_option('--submit_several_name',dest='submit_several_name',default=None)
 
+# extra options for JUNE simulation
+parser.add_option('--world_dir',dest='world_dir',action='store',default=None)
+parser.add_option('--results_dir',dest='results_dir',action='store',default=None)
+
 (options,args) = parser.parse_args()
 
 N_runs = int(options.N_runs)
@@ -67,7 +71,14 @@ if os.path.exists(stdout_dir) is False:
 if os.path.exists(script_dir) is False:
     os.makedirs(script_dir)
 
-PYTHON_CMD = f"python3 -u {simulation_script} %d {options.iteration} {options.region}"
+
+sim_options = ''
+if options.world_dir is not None:
+    sim_options = sim_options + f'--world_dir {options.world_dir} '
+if options.results_dir is not None:
+    sim_options = sim_options + f'--results_dir {options.results_dir} '
+
+PYTHON_CMD = f"python3 -u {simulation_script} %d {options.iteration} {options.region} {sim_options}"
 #python cmd can now has THREE args:
 #    %d: an integer
 #    iteration: which "repeat" is this? 
