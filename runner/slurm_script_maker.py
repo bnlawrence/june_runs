@@ -20,7 +20,6 @@ class SlurmScriptMaker:
         system="cosma",
         queue="cosma",
         account="durham",
-        stdout_dir="stdout",
         max_time="72:00:00",
         region="london",
         iteration=1,
@@ -38,11 +37,12 @@ class SlurmScriptMaker:
         self.max_time = max_time
         self.max_cpus_per_node = queue_to_max_cpus[queue]
         self.parallel_tasks_path = Path(parallel_tasks_path)
-        self.stdout_dir = Path(stdout_dir)
         self.runner_path = Path(runner_path)
         self.num_runs = num_runs
         self.output_path = output_path
         self.config_path = config_path
+        self.stdout_dir = self.output_path / "stdout"
+        self.stdout_dir.mkdir(parents=True, exist_ok=True)
 
     @classmethod
     def from_file(cls, config_path: str = default_config_path):
