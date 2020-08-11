@@ -13,6 +13,7 @@ default_config_path = Path(__file__).parent.parent / "run_configs/config_example
 class SlurmScriptMaker:
     def __init__(
         self,
+        config_path=default_config_path,
         jobs_per_node=4,
         system="cosma",
         queue="cosma",
@@ -39,6 +40,7 @@ class SlurmScriptMaker:
         self.runner_path = Path(runner_path)
         self.num_runs = num_runs
         self.output_path = Path(output_path) / self.region / f"iteration_{self.iteration:02}"
+        self.config_path = config_path
 
     @classmethod
     def from_file(cls, config_path: str = default_config_path):
@@ -62,6 +64,7 @@ class SlurmScriptMaker:
         iteration = config["iteration"]
         num_samples = config["parameter_configuration"]["number_of_samples"]
         return cls(
+            config_path=config_path,
             jobs_per_node=jobs_per_node,
             system=system,
             queue=queue,
@@ -110,7 +113,7 @@ class SlurmScriptMaker:
             ]
             + loading_python
             + [
-                f"mpirun -np {index_high-index_low+1} {self.parallel_tasks_path.absolute()} {index_low} {index_high} {self.runner_path.absolute()} %d ",
+                f"mpirun -np {index_high-index_low+1} {self.parallel_tasks_path.absolute()} {index_low} {index_high} \"python -u {self.runner_path.absolute()} {self.config_path} -i %d \"",
             ]
         )
         return script_lines

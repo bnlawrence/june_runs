@@ -1,6 +1,7 @@
 import numpy as np
 import os
 import sys
+import json
 import yaml
 from pyDOE2 import lhs
 from SALib.util import scale_samples
@@ -201,6 +202,11 @@ class Runner:
     def generate_simulator(self, parameter_index):
         world = self.generate_world()
         parameters_dict = self.parameter_generator[parameter_index]
+        run_name = f"run_{parameter_index:03}"
+        save_path = self.paths_configuration["results_path"] / run_name
+        save_path.mkdir(exist_ok=True, parents=True)
+        with open(save_path / "parameters.json", "w") as f:
+            json.dump(parameters_dict, f)
         health_index_generator = self.generate_health_index_generator(parameters_dict)
         infection_selector = self.generate_infection_selector(health_index_generator)
         interaction = self.generate_interaction(parameters_dict)
@@ -211,6 +217,7 @@ class Runner:
         leisure = generate_leisure_for_config(
             world, self.paths_configuration["config_path"]
         )
+        print("Save path ", save_path)
         simulator = Simulator.from_file(
             world=world,
             interaction=interaction,
@@ -219,7 +226,7 @@ class Runner:
             infection_seed=infection_seed,
             infection_selector=infection_selector,
             policies=policies,
-            save_path=self.paths_configuration["results_path"],
+            save_path=save_path,
         )
         return simulator
 
