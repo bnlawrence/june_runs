@@ -6,3 +6,4 @@
 *.hdf5
 june_results/
 *several*.sh
+*__pycache__*
