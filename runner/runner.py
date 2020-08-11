@@ -217,7 +217,6 @@ class Runner:
         leisure = generate_leisure_for_config(
             world, self.paths_configuration["config_path"]
         )
-        print("Save path ", save_path)
         simulator = Simulator.from_file(
             world=world,
             interaction=interaction,
