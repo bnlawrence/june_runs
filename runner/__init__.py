@@ -1,1 +1,2 @@
-from .runner import Runner, ParameterGenerator
+from .runner import Runner
+from .parameter_generator import ParameterGenerator

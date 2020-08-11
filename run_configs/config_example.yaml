@@ -1,5 +1,8 @@
 system_configuration:
   name: "cosma" #available : [cosma, jasmin]
+  queue: cosma
+  account: durham
+  runs_per_node: 4
 
 region: "london"
 iteration: 1
