@@ -38,7 +38,6 @@ assert set(beta_names) == set(beta_bounds.keys())
 extra_names = [
     'alpha_physical',
     'asymptomatic_ratio',
-    'beta_factor_1',
     'beta_factor_2',
     'seed_strength',
     'household_compliance_2'
@@ -47,7 +46,6 @@ extra_names = [
 extra_bounds = {                
     'alpha_physical' : (1.8,3.0),
     'asymptomatic_ratio' : (0.05,0.4),
-    'beta_factor_1' : (0.3,0.9),
     'beta_factor_2' : (0.3,0.9),
     'seed_strength' : (0.5,1.3),
     'household_compliance_2' : (0.2,0.8)

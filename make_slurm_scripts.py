@@ -16,6 +16,7 @@ parser.add_option('-p','--partition',dest='partition',default='cosma')
 parser.add_option('-A','--project',dest='project',default='durham')
 parser.add_option('--N_cores',dest='N_cores',default=15)
 parser.add_option('--n_per_node',dest='n_per_node',action='store',default=4,type='int')
+parser.add_option('-J', dest='is_jasmin', action='store', default=0, type='int')
 
 # extra info for slurm, etc.
 parser.add_option('--slurm_name',dest='slurm_name',action='store',default=None)
@@ -91,6 +92,17 @@ for i,(low,high) in enumerate(zip(index_list[:-1],index_list[1:])):
     ntasks = high-low
 
     stdout_name = stdout_dir / f'{options.slurm_name}_{iteration}_{i:03d}.%J'
+    if bool(options.is_jasmin):
+        loading_python=['module purge',
+                        'module load eb/OpenMPI/gcc/4.0.0',
+                        'module load jaspy/3.7/r20200606', 
+			'source /gws/nopw/j04/covid_june/june_venv/bin/activate']
+    else:
+        loading_python = [f'module purge',
+            f'module load python/3.6.5',
+            f'module load gnu_comp/7.3.0',
+            f'module load hdf5',
+            f'module load openmpi/3.0.1']
 
     script_lines = [
         '#!/bin/bash -l',
@@ -102,16 +114,9 @@ for i,(low,high) in enumerate(zip(index_list[:-1],index_list[1:])):
         f'#SBATCH -p {options.partition}',
         f'#SBATCH -A {options.project} #e.g. dp004',
         f'#SBATCH --exclusive',
-        f'#SBATCH -t 72:00:00',
-        f'#SBATCH --mail-type=END',
-        f'#SBATCH --mail-user aidan.sedgewick@durham.ac.uk',
-        f'',
-        f'module purge',
-        f'# load the modules used to build your program.',
-        f'module load python/3.6.5',
-        f'module load gnu_comp/7.3.0',
-        f'module load hdf5',
-        f'module load openmpi/3.0.1',
+        f'#SBATCH -t 72:00:00'] +\
+        loading_python + \
+        [f'# load the modules used to build your program.',
         '',
         f'# Run the program {ntasks} times (on {ntasks} cores).',
         f'mpirun -np {ntasks} {parallel_tasks} {low} {high-1} "{PYTHON_CMD}" ',

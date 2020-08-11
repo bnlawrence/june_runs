@@ -6,7 +6,6 @@ from optparse import OptionParser
 import numpy as np
 import time
 from datetime import datetime
-import matplotlib.pyplot as plt
 import pandas as pd
 import json
 #import seaborn as sns
@@ -73,6 +72,7 @@ lhs_array = gp.generate_lhs(num_samples=options.num_samples)
 
 index = int(args[0])
 iteration = int(args[1])
+
 if len(args) == 3:
     region_name = args[2]
 else:
@@ -100,7 +100,7 @@ summary_dir = work_dir / Path(f'{options.results_dir}/{region_name}/summaries/it
 
 if os.path.exists(SAVE_PATH) is False:
     print(f'make dir {SAVE_PATH}')
-    os.makedirs(SAVE_PATH)
+    SAVE_PATH.mkdir(exist_ok=True, parents=True)
 else:
     print(f'dir exists {SAVE_PATH}!')
     if os.path.exists(SAVE_PATH / 'logger.hdf5'):
@@ -111,14 +111,7 @@ with open(SAVE_PATH / 'parameters.json', 'w') as f:
     json.dump(parameters,f)
 
 
-if os.path.exists(summary_dir) is False:
-    try:
-        os.makedirs(summary_dir)
-        print(f'make summary dir {summary_dir}')
-    except:
-        print(f'Cant make {summary_dir}')
-else:
-    print(f'summary dir exists {summary_dir}')
+summary_dir.mkdir(exist_ok=True, parents=True)
 
 print_memory_status(when='before load')
 
@@ -166,7 +159,6 @@ print(interaction.beta)
 
 ###==============Do policies================###
 
-#policies = Policies.from_file("/cosma6/data/dp004/dc-quer1/june_runs/london_policy.yaml")
 policies = Policies.from_file()
 
 
@@ -176,16 +168,11 @@ betas_to_reduce = [
 ]
 
 
-if 'beta_factor_1' in parameters.keys():
-    beta_factor_1 = parameters['beta_factor_1']
-    print(f'beta_factor_1 {beta_factor_1}')
-else:
-    beta_factor_1 = 0.8
-    print('No beta_factor_1!')
-
 if 'beta_factor_2' in parameters.keys():
-    beta_factor_2 = beta_factor_1*parameters['beta_factor_2'] # so b1 > b2 always
-    print(f'beta_factor_2 {beta_factor_2}')
+    beta_factor_2 = parameters['beta_factor_2']
+    beta_factor_1 = beta_factor_2 + (1-beta_factor_2) / 2
+    print(f"BETA FACTOR 1 {beta_factor_1}")
+    print(f"BETA FACTOR 2 {beta_factor_2}")
 else:
     beta_factor_2 = 0.8
     print('No beta_factor_2!')
@@ -212,14 +199,7 @@ quar2 = {'household_compliance' : household_compliance_2}
 
 gp.modify_policy(policies,'quarantine',number=2,values=quar2)
 
-#for p in policies:
-    #print(p.__dict__)
-
 ###==============Load the world==================###
-
-#world_file = "/cosma7/data/dp004/dc-quer1/JUNE/scripts/tests.hdf5"
-#world_file = f'{work_dir}/june_worlds/small_test.hdf5'
-
 # these are for small_100k_world tests...
 if os.path.exists(world_file) is False:
     raise IOError(f'no world {world_file}!')
