@@ -1,0 +1,43 @@
+system_configuration:
+  name: "cosma" #available : [cosma, jasmin]
+
+region: "london"
+iteration: 1
+
+paths_configuration: # use @ as placeholder
+#base_path: "/cosma6/data/dp004/dc-quer1/june_runs"
+  base_path: "/home/arnau/code/june_runs"
+  world_path: "@base_path/../JUNE/scripts/tests.hdf5"
+  results_path: "@base_path/june_results"
+  config_path: "@base_path/config.yaml"
+
+infection_configuration:
+  infectivity_profile: "XNExp" # available: ["XNExp", "nature", "correction_nature"]
+
+policy_configuration:
+  lockdown_ratio: 0.5
+
+parameter_configuration:
+  iteration: 1
+  number_of_samples: 250
+  parameters_to_vary:
+    betas:
+      'pub'       : [0.01, 0.25]
+      'grocery'   : [0.01, 0.25]
+      'cinema'    : [0.01, 0.25]
+      'commute_unit' : [0.01, 0.5]
+      'commute_city_unit' : [0.01, 0.5]
+      'hospital'  : [0.05, 0.5]
+      'care_home' : [0.05, 1.]
+      'company'   : [0.05, 0.5]
+      'school'    : [0.05, 0.5]
+      'household' : [0.05, 0.5]
+      'university': [0.01, 0.5]
+    alpha_physical : [1.8,3.0]
+    asymptomatic_ratio: [0.05, 0.4]
+    seed_strength : [0.5,1.3]
+    policies:
+      social_distancing:
+          beta_factor: [0.3,0.9]
+      quarantine:
+          household_compliance: [0.2,0.8]
