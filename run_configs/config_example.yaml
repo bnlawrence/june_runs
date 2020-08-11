@@ -1,5 +1,5 @@
 system_configuration:
-  name: "cosma" #available : [cosma, jasmin]
+  name: cosma #available : [cosma, jasmin]
   queue: cosma
   account: durham
   jobs_per_node: 4
