@@ -64,7 +64,7 @@ stdout_dir = work_dir / 'stdout'
 script_dir = Path('submit_scripts')
 
 simulation_script = work_dir / options.script
-parallel_tasks = work_dir / script_dir / 'parallel_tasks'
+parallel_tasks = work_dir / "parallel_tasks" / 'parallel_tasks'
 
 if os.path.exists(stdout_dir) is False:
     os.makedirs(stdout_dir)
