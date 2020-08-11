@@ -97,7 +97,7 @@ class SlurmScriptMaker:
         elif self.system == "cosma":
             loading_python = [
                 f"module purge",
-                f"module load python/3.6.5",
+                f"module load pythonconda3/2020-02",
                 f"module load gnu_comp/7.3.0",
                 f"module load hdf5",
                 f"module load openmpi/3.0.1",
