@@ -2,8 +2,11 @@ system_configuration:
   name: "cosma" #available : [cosma, jasmin]
   queue: cosma
   account: durham
-  runs_per_node: 4
-
+  jobs_per_node: 4
+  parallel_tasks_path: "default"
+  runner_path: "default"
+  max_time: "72:00:00"
+  
 region: "london"
 iteration: 1
 
