@@ -40,7 +40,7 @@ class SlurmScriptMaker:
         self.runner_path = Path(runner_path)
         self.num_runs = num_runs
         self.output_path = output_path
-        self.config_path = config_path
+        self.config_path = Path(config_path)
         self.stdout_dir = self.output_path / "stdout"
         self.stdout_dir.mkdir(parents=True, exist_ok=True)
 
@@ -119,7 +119,7 @@ class SlurmScriptMaker:
             ]
             + loading_python
             + [
-                f'mpirun -np {index_high-index_low+1} {self.parallel_tasks_path.absolute()} {index_low} {index_high} "python -u {self.runner_path.absolute()} {self.config_path} -i %d "',
+                f'mpirun -np {index_high-index_low+1} {self.parallel_tasks_path.absolute()} {index_low} {index_high} "python -u {self.runner_path.absolute()} {self.config_path.absolute()} -i %d "',
             ]
         )
         return script_lines
