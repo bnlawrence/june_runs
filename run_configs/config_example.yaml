@@ -14,7 +14,7 @@ paths_configuration: # use @ as placeholder
 #base_path: "/cosma6/data/dp004/dc-quer1/june_runs"
   base_path: "/home/arnau/code/june_runs"
   world_path: "@base_path/../JUNE/scripts/tests.hdf5"
-  results_path: "@base_path/june_results"
+  results_path: "@base_path/june_results2"
   config_path: "@base_path/config.yaml"
 
 infection_configuration:

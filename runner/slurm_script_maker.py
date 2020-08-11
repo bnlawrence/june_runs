@@ -2,6 +2,8 @@ from pathlib import Path
 import numpy as np
 import yaml
 
+from .runner import parse_paths
+
 queue_to_max_cpus = {"cosma": 16, "cosma6": 16, "cosma7": 28, "jasmin": 20}
 default_parallel_tasks_path = (
     Path(__file__).parent.parent / "parallel_tasks/parallel_tasks"
@@ -39,7 +41,7 @@ class SlurmScriptMaker:
         self.stdout_dir = Path(stdout_dir)
         self.runner_path = Path(runner_path)
         self.num_runs = num_runs
-        self.output_path = Path(output_path) / self.region / f"iteration_{self.iteration:02}"
+        self.output_path = output_path
         self.config_path = config_path
 
     @classmethod
@@ -63,6 +65,9 @@ class SlurmScriptMaker:
         region = config["region"]
         iteration = config["iteration"]
         num_samples = config["parameter_configuration"]["number_of_samples"]
+        paths = parse_paths(
+            config["paths_configuration"], region=region, iteration=iteration
+        )
         return cls(
             config_path=config_path,
             jobs_per_node=jobs_per_node,
@@ -74,7 +79,8 @@ class SlurmScriptMaker:
             runner_path=run_script,
             region=region,
             iteration=iteration,
-            num_runs=num_samples
+            num_runs=num_samples,
+            output_path=paths["results_path"],
         )
 
     def make_script_lines(self, script_number, index_low, index_high):
@@ -113,7 +119,7 @@ class SlurmScriptMaker:
             ]
             + loading_python
             + [
-                f"mpirun -np {index_high-index_low+1} {self.parallel_tasks_path.absolute()} {index_low} {index_high} \"python -u {self.runner_path.absolute()} {self.config_path} -i %d \"",
+                f'mpirun -np {index_high-index_low+1} {self.parallel_tasks_path.absolute()} {index_low} {index_high} "python -u {self.runner_path.absolute()} {self.config_path} -i %d "',
             ]
         )
         return script_lines

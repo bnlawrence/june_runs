@@ -31,6 +31,37 @@ default_values = {
 }
 
 
+def parse_paths(paths_configuration, region, iteration):
+    """
+    Substitutes placeholders in config.
+    """
+    ret = {}
+    names_with_placeholder = [
+        key for key, value in paths_configuration.items() if "@" in value
+    ]
+    names_without_placeholder = [
+        key for key, value in paths_configuration.items() if "@" not in value
+    ]
+    for name in names_without_placeholder:
+        ret[name] = paths_configuration[name]
+    if names_with_placeholder:
+        for name in names_with_placeholder:
+            value = paths_configuration[name]
+            value_split = value.split("/")
+            reconstructed = []
+            for split in value_split:
+                if "@" in split:
+                    placeholder_name = split[1:]
+                    reconstructed.append(ret[placeholder_name])
+                else:
+                    reconstructed.append(split)
+            reconstructed = "/".join(reconstructed)
+            ret[name] = Path(reconstructed)
+    ret["results_path"] = ret["results_path"] / region / f"iteration_{iteration:02}"
+    ret["results_path"].mkdir(exist_ok=True, parents=True)
+    return ret
+
+
 class Runner:
     """
     A class to handle parameter runs of the JUNE code.
@@ -45,12 +76,14 @@ class Runner:
         infection_configuration: dict = None,
         region_configuration: dict = None,
         parameter_configuration: dict = None,
-        policy_configuration: dict = None
+        policy_configuration: dict = None,
     ):
         self.system_configuration = system_configuration
         self.region = region
         self.iteration = iteration
-        self.paths_configuration = self._read_paths(paths_configuration)
+        self.paths_configuration = parse_paths(
+            paths_configuration, region=region, iteration=iteration
+        )
         self.infection_configuration = infection_configuration
         self.region_configuration = region_configuration
         self.parameter_configuration = parameter_configuration
@@ -63,38 +96,6 @@ class Runner:
             config = yaml.load(f, Loader=yaml.FullLoader)
         return cls(**config)
 
-    def _read_paths(self, paths_configuration):
-        """
-        Substitutes placeholders in config.
-        """
-        ret = {}
-        names_with_placeholder = [
-            key for key, value in paths_configuration.items() if "@" in value
-        ]
-        names_without_placeholder = [
-            key for key, value in paths_configuration.items() if "@" not in value
-        ]
-        for name in names_without_placeholder:
-            ret[name] = paths_configuration[name]
-        if names_with_placeholder:
-            for name in names_with_placeholder:
-                value = paths_configuration[name]
-                value_split = value.split("/")
-                reconstructed = []
-                for split in value_split:
-                    if "@" in split:
-                        placeholder_name = split[1:]
-                        reconstructed.append(ret[placeholder_name])
-                    else:
-                        reconstructed.append(split)
-                reconstructed = "/".join(reconstructed)
-                ret[name] = Path(reconstructed)
-        ret["results_path"] = (
-            ret["results_path"] / self.region / f"iteration_{self.iteration:02}"
-        )
-        ret["results_path"].mkdir(exist_ok=True, parents=True)
-        return ret
-
     @staticmethod
     def _set_beta_factors(self, social_distancing_policy, beta_factor):
         for key in social_distancing_policy.beta_factors:
@@ -104,14 +105,13 @@ class Runner:
     def generate_world(self):
         world = generate_world_from_hdf5(self.paths_configuration["world_path"])
         return world
-    
+
     def generate_health_index_generator(self, parameters_dict):
         if "asymptomatic_ratio" in parameters_dict:
             asymptomatic_ratio = parameters_dict["asymptomatic_ratio"]
         else:
             asymptomatic_ratio = default_values["asymptomatic_ratio"]
         return HealthIndexGenerator.from_file(asymptomatic_ratio=asymptomatic_ratio)
-
 
     def generate_infection_selector(self, health_index_generator):
         if "infectivity_profile" in self.infection_configuration:
@@ -228,4 +228,3 @@ class Runner:
             save_path=save_path,
         )
         return simulator
-
