@@ -18,7 +18,9 @@ from june.policy import Policy, Policies, SocialDistancing, Quarantine
 from june.infection.infection import InfectionSelector
 from june.world import generate_world_from_hdf5
 from june import paths
+from june.logger.read_logger import ReadLogger
 from .parameter_generator import ParameterGenerator
+from .extract_data import *
 
 default_config_file = Path(__file__).parent.parent / "run_configs/config_example.yaml"
 
@@ -43,7 +45,7 @@ def parse_paths(paths_configuration, region, iteration):
         key for key, value in paths_configuration.items() if "@" not in value
     ]
     for name in names_without_placeholder:
-        ret[name] = paths_configuration[name]
+        ret[name] = Path(paths_configuration[name])
     if names_with_placeholder:
         for name in names_with_placeholder:
             value = paths_configuration[name]
@@ -52,13 +54,18 @@ def parse_paths(paths_configuration, region, iteration):
             for split in value_split:
                 if "@" in split:
                     placeholder_name = split[1:]
-                    reconstructed.append(ret[placeholder_name])
+                    reconstructed.append(ret[placeholder_name].as_posix())
                 else:
                     reconstructed.append(split)
             reconstructed = "/".join(reconstructed)
             ret[name] = Path(reconstructed)
+
     ret["results_path"] = ret["results_path"] / region / f"iteration_{iteration:02}"
     ret["results_path"].mkdir(exist_ok=True, parents=True)
+
+    ret["summary_path"] = ret["summary_path"] / region / f"iteration_{iteration:02}"
+    ret["summary_path"].mkdir(exist_ok=True, parents=True)    
+
     return ret
 
 
@@ -77,6 +84,7 @@ class Runner:
         region_configuration: dict = None,
         parameter_configuration: dict = None,
         policy_configuration: dict = None,
+        summary_configuration: dict = None
     ):
         self.system_configuration = system_configuration
         self.region = region
@@ -89,6 +97,7 @@ class Runner:
         self.parameter_configuration = parameter_configuration
         self.policy_configuration = policy_configuration
         self.parameter_generator = ParameterGenerator(parameter_configuration)
+        self.summary_configuration = summary_configuration
 
     @classmethod
     def from_file(cls, config_path: str = default_config_file):
@@ -228,3 +237,59 @@ class Runner:
             save_path=save_path,
         )
         return simulator
+
+
+    #@staticmethod
+    def extract_summaries(self, parameter_index=None, logger_dir=None, summary_dir=None):
+        
+        if parameter_index is not None:
+            run_name = f"run_{parameter_index:03}"
+
+        if logger_dir is None:
+            logger_dir = self.paths_configuration["results_path"] / run_name
+
+        if summary_dir is None:
+            summary_dir = self.paths_configuration["summary_path"]
+
+        try:
+            logger = ReadLogger(logger_dir)
+        except Exception as e:
+            print(str(e))
+            l1 = '***'+19*' '+'***'
+            print(f'{l1}\n{4*" "}CAN\'T READ LOGGER{4*" "}\n{l1}')
+            return None
+
+        world_path = summary_dir / f"world_summary_{parameter_index:03}.csv"
+        daily_world_path = summary_dir / f"daily_world_summary_{parameter_index:03}.csv"
+        save_world_summaries(logger,world_path, daily_world_path)
+
+        if self.summary_configuration:
+            age_bins = self.summary_configuration["age_bins"]
+        else:
+            age_bins = None
+
+        age_path = summary_dir / f"age_summary_{parameter_index:03}.csv"
+        daily_age_path = summary_dir / f"daily_age_summary_{parameter_index:03}.csv"   
+        save_age_summaries(logger,age_path,daily_age_path,age_bins=age_bins)
+
+        hospital_path = summary_dir / f"hospital_summary_{parameter_index:03}.csv"
+        save_hospital_summary(logger,hospital_path)
+        
+        return None
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

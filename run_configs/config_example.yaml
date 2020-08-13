@@ -5,16 +5,19 @@ system_configuration:
   jobs_per_node: 4
   parallel_tasks_path: "default"
   runner_path: "default"
+  email_notifications: True
+  email_address: null # your email here
   max_time: "72:00:00"
   
-region: "london"
+region: "tests"
 iteration: 1
 
 paths_configuration: # use @ as placeholder
 #base_path: "/cosma6/data/dp004/dc-quer1/june_runs"
-  base_path: "/home/arnau/code/june_runs"
-  world_path: "@base_path/../JUNE/scripts/tests.hdf5"
+  base_path: "/cosma5/data/durham/dc-sedg2/covid/june_runs"
+  world_path: "@base_path/june_worlds/small_100k.hdf5"
   results_path: "@base_path/june_results2"
+  summary_path: "@results_path/summaries"
   config_path: "@base_path/config.yaml"
 
 infection_configuration:
@@ -47,3 +50,17 @@ parameter_configuration:
           beta_factor: [0.3,0.9]
       quarantine:
           household_compliance: [0.2,0.8]
+
+summary_configuration:
+  'age_bins' : [0, 6, 18, 65, 85, 100]
+
+
+
+
+
+
+
+
+
+
+
