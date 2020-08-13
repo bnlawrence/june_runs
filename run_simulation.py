@@ -1,4 +1,4 @@
-from runner import Runner
+bash from runner import Runner
 from runner import SlurmScriptMaker
 import sys
 from argparse import ArgumentParser
@@ -21,6 +21,6 @@ else:
     if parameter_index is None:
         raise ValueError("provide parameter index")
     runner = Runner.from_file(config_path)
-    #simulator = runner.generate_simulator(parameter_index)
-    #simulator.run()
+    simulator = runner.generate_simulator(parameter_index)
+    simulator.run()
     runner.extract_summaries(parameter_index=parameter_index)
