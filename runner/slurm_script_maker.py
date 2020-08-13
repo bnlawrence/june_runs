@@ -20,6 +20,8 @@ class SlurmScriptMaker:
         system="cosma",
         queue="cosma",
         account="durham",
+        email_notifications=False,
+        email_address=None,
         max_time="72:00:00",
         region="london",
         iteration=1,
@@ -33,6 +35,8 @@ class SlurmScriptMaker:
         self.system = system
         self.queue = queue
         self.account = account
+        self.email_notifications = email_notifications
+        self.email_address = email_address
         self.iteration = iteration
         self.max_time = max_time
         self.max_cpus_per_node = queue_to_max_cpus[queue]
@@ -53,6 +57,8 @@ class SlurmScriptMaker:
         queue = system_configuration["queue"]
         max_time = system_configuration["max_time"]
         account = system_configuration["account"]
+        email_notifications = system_configuration["email_notifications"]
+        email_address = system_configuration["email_address"]
         if system_configuration["parallel_tasks_path"] == "default":
             parallel_tasks_path = default_parallel_tasks_path
         else:
@@ -75,6 +81,8 @@ class SlurmScriptMaker:
             queue=queue,
             max_time=max_time,
             account=account,
+            email_notifications=email_notifications,
+            email_address=email_address,
             parallel_tasks_path=parallel_tasks_path,
             runner_path=run_script,
             region=region,
@@ -104,6 +112,14 @@ class SlurmScriptMaker:
             ]
         else:
             raise ValueError(f"System {self.system} is not supported")
+        if (self.email_notifications) and (self.email_address is not None):
+            email_lines = [
+                f"#SBATCH --mail-type=BEGIN,END",
+                f"#SBATCH --mail-user={self.email_address}"
+            ]
+        else:
+            email_lines = []
+                
         script_lines = (
             [
                 "#!/bin/bash -l",
@@ -117,6 +133,7 @@ class SlurmScriptMaker:
                 f"#SBATCH --exclusive",
                 f"#SBATCH -t {self.max_time}",
             ]
+            + email_lines
             + loading_python
             + [
                 f'mpirun -np {index_high-index_low+1} {self.parallel_tasks_path.absolute()} {index_low} {index_high} "python -u {self.runner_path.absolute()} {self.config_path.absolute()} -i %d "',
@@ -142,11 +159,24 @@ class SlurmScriptMaker:
                     f.write(line + "\n")
 
         # make submission script
-        with open(self.output_path / "submit_scripts.sh", "w") as f:
+        submit_scripts_path = self.output_path / "submit_scripts.sh"
+        with open(submit_scripts_path, "w") as f:
             f.write("#!/bin/bash" + "\n\n")
-            for script_name in script_names:
+            for i,script_name in enumerate(script_names):
                 line = f"sbatch {script_name.absolute()}"
                 f.write(line + "\n")
+                if i == 0:
+                    try:
+                        print_path = script_name.relative_to(Path.cwd())
+                    except:
+                        print_path = script_name
+                    print(f'scripts written to eg.:\n    {print_path}\n')
+
+        try:
+            print_path = submit_scripts_path.relative_to(Path.cwd())
+        except:
+            print_path = submit_scripts_path
+        print(f'submit all_scripts with:\n    \033[35mbash {print_path}\033[0m')
 
 
 if __name__ == "__main__":
