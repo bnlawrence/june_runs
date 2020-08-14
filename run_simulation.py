@@ -1,4 +1,4 @@
-bash from runner import Runner
+from runner import Runner
 from runner import SlurmScriptMaker
 import sys
 from argparse import ArgumentParser
