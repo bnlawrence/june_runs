@@ -7,3 +7,11 @@
 june_results/
 *several*.sh
 *__pycache__*
+old_*
+
+# allow-list all of run_configs
+!run_configs
+# ignore everything in run_configs
+run_configs/*
+# allow-list only the example in run_configs
+!run_configs/config_example.yaml
