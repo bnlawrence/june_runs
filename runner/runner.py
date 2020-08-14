@@ -3,6 +3,9 @@ import os
 import sys
 import json
 import yaml
+import time
+import psutil
+
 from pyDOE2 import lhs
 from SALib.util import scale_samples
 from pathlib import Path
@@ -68,6 +71,17 @@ def parse_paths(paths_configuration, region, iteration):
 
     return ret
 
+def verbose_print(*args,verbose=False):
+    if verbose:
+        print(*args)
+
+def memory_status(when='now'):
+    mem = psutil.virtual_memory()
+    tot = f"total: {mem.total/1024**3:.2f}G"
+    used = f"used: {mem.used/1024**3:.2f}G"
+    perc = f"percent used: {mem.percent:.2f}%"
+    avail = f"avail: {mem.available/1024**3:.2f}G"
+    return f"memory {when}: \n    {tot}, {used}, {perc}, {avail}"
 
 class Runner:
     """
@@ -84,7 +98,8 @@ class Runner:
         region_configuration: dict = None,
         parameter_configuration: dict = None,
         policy_configuration: dict = None,
-        summary_configuration: dict = None
+        summary_configuration: dict = None,
+        verbose: bool = False
     ):
         self.system_configuration = system_configuration
         self.region = region
@@ -98,11 +113,13 @@ class Runner:
         self.policy_configuration = policy_configuration
         self.parameter_generator = ParameterGenerator(parameter_configuration)
         self.summary_configuration = summary_configuration
+        self.verbose = system_configuration["verbose"]
 
     @classmethod
     def from_file(cls, config_path: str = default_config_file):
         with open(config_path, "r") as f:
             config = yaml.load(f, Loader=yaml.FullLoader)
+        print(config)
         return cls(**config)
 
     @staticmethod
@@ -115,18 +132,20 @@ class Runner:
         world = generate_world_from_hdf5(self.paths_configuration["world_path"])
         return world
 
-    def generate_health_index_generator(self, parameters_dict):
+    def generate_health_index_generator(self, parameters_dict, verbose=False):
         if "asymptomatic_ratio" in parameters_dict:
             asymptomatic_ratio = parameters_dict["asymptomatic_ratio"]
         else:
             asymptomatic_ratio = default_values["asymptomatic_ratio"]
         return HealthIndexGenerator.from_file(asymptomatic_ratio=asymptomatic_ratio)
 
-    def generate_infection_selector(self, health_index_generator):
+    def generate_infection_selector(self, health_index_generator, verbose=False):
         if "infectivity_profile" in self.infection_configuration:
             infectivity_profile = self.infection_configuration["infectivity_profile"]
+            verbose_print(f"set infectivity profile {infectivity_profile}", verbose=verbose)
         else:
             infectivity_profile = default_values["infectivity_profile"]
+            verbose_print(f"no infectivity profile; default {infectivity_profile}", verbose=verbose)
         transmission_config = Path(f"defaults/transmission/{infectivity_profile}.yaml")
         infection_selector = InfectionSelector.from_file(
             transmission_config_path=paths.configs_path / transmission_config,
@@ -134,12 +153,14 @@ class Runner:
         )
         return infection_selector
 
-    def generate_interaction(self, parameters_dict):
+    def generate_interaction(self, parameters_dict, verbose=False):
         interaction = Interaction.from_file()
         if "alpha_physical" in parameters_dict:
             alpha_physical = parameters_dict["alpha_physical"]
+            verbose_print(f"set alpha_physical {alpha_physical:.3f}", verbose=verbose)
         else:
             alpha_physical = default_values["alpha_physical"]
+            verbose_print(f"no alpha_physical; default {alpha_physical:.3f}",  verbose=verbose)
         interaction.alpha_physical = alpha_physical
         for beta in interaction.beta:
             beta_parameter_name = f"beta_{beta}"
@@ -147,14 +168,16 @@ class Runner:
                 interaction.beta[beta] = parameters_dict[beta_parameter_name]
         return interaction
 
-    def generate_policies(self, parameters_dict):
+    def generate_policies(self, parameters_dict,verbose=False):
         policies = Policies.from_file()
         policies_to_modify = defaultdict(list)
         policy_types = set()
         if "lockdown_ratio" in self.policy_configuration:
             lockdown_ratio = self.policy_configuration["lockdown_ratio"]
+            verbose_print(f"set lockdown_ratio {lockdown_ratio:.3f}", verbose=verbose)
         else:
             lockdown_ratio = default_values["lockdown_ratio"]
+            verbose_print(f"no lockdown_ratio; default {lockdown_ratio:.3f}", verbose=verbose)
         for policy in policies:
             policy_name = policy.spec
             for parameter_name in parameters_dict:
@@ -188,18 +211,20 @@ class Runner:
                     setattr(second_policy, parameter_name, parameter_value)
         return policies
 
-    def generate_infection_seed(self, parameters_dict, infection_selector, world):
+    def generate_infection_seed(self, parameters_dict, infection_selector, world, verbose=False):
         if "seed_strength" in parameters_dict:
             seed_strength = parameters_dict["seed_strength"]
+            verbose_print(f"set seed strength {seed_strength:.3f}",verbose=verbose)
         else:
             seed_strength = default_values["seed_strength"]
+            verbose_print(f"no seed strength; default {seed_strength:.3f}",verbose=verbose)
         oc = Observed2Cases.from_file(
             super_areas=world.super_areas,
             health_index=infection_selector.health_index_generator,
         )
         n_cases_df = oc.cases_from_deaths()
-        # Seed over 5 days
-        n_cases_to_seed_df = n_cases_df.loc["2020-03-01":"2020-03-02"]
+        # Seed over 2 days
+        n_cases_to_seed_df = n_cases_df.loc["2020-02-28":"2020-02-29"]
         infection_seed = InfectionSeed.from_file(
             super_areas=world.super_areas,
             selector=infection_selector,
@@ -208,9 +233,13 @@ class Runner:
         )
         return infection_seed
 
-    def generate_simulator(self, parameter_index):
-        world = self.generate_world()
+    def generate_simulator(self, parameter_index, verbose=None):
+        if verbose is None:
+            print('in if')
+            verbose=self.verbose
+        print('verbose is', verbose)
         parameters_dict = self.parameter_generator[parameter_index]
+        verbose_print(f"{parameter_index} params:",parameters_dict, verbose=verbose) #
         run_name = f"run_{parameter_index:03}"
         save_path = self.paths_configuration["results_path"] / run_name
         save_path.mkdir(exist_ok=True, parents=True)
@@ -220,6 +249,9 @@ class Runner:
         infection_selector = self.generate_infection_selector(health_index_generator)
         interaction = self.generate_interaction(parameters_dict)
         policies = self.generate_policies(parameters_dict)
+        verbose_print(memory_status(when='before world'), verbose=verbose) #
+        world = self.generate_world()
+        verbose_print(memory_status(when='after world'), verbose=verbose) #
         infection_seed = self.generate_infection_seed(
             parameters_dict, infection_selector, world
         )
@@ -238,9 +270,8 @@ class Runner:
         )
         return simulator
 
-
-    #@staticmethod
-    def extract_summaries(self, parameter_index=None, logger_dir=None, summary_dir=None):
+    #@staticmethod # Can't decide, static or not - would be helpful to call as static for failed loggers...
+    def extract_summaries(self, parameter_index=None, logger_dir=None, summary_dir=None, verbose=False):
         
         if parameter_index is not None:
             run_name = f"run_{parameter_index:03}"
@@ -251,6 +282,7 @@ class Runner:
         if summary_dir is None:
             summary_dir = self.paths_configuration["summary_path"]
 
+        t1 = time.time()
         try:
             logger = ReadLogger(logger_dir)
         except Exception as e:
@@ -258,6 +290,8 @@ class Runner:
             l1 = '***'+19*' '+'***'
             print(f'{l1}\n{4*" "}CAN\'T READ LOGGER{4*" "}\n{l1}')
             return None
+        t2 = time.time()
+        verbose_print(f"{(t2-t1)/60.}",verbose=verbose)
 
         world_path = summary_dir / f"world_summary_{parameter_index:03}.csv"
         daily_world_path = summary_dir / f"daily_world_summary_{parameter_index:03}.csv"
