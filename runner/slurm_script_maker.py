@@ -1,8 +1,10 @@
 from pathlib import Path
 import numpy as np
 import yaml
+import subprocess
 
 from .runner import parse_paths
+import june
 
 queue_to_max_cpus = {"cosma": 16, "cosma6": 16, "cosma7": 28, "jasmin": 20}
 default_parallel_tasks_path = (
@@ -52,6 +54,8 @@ class SlurmScriptMaker:
     def from_file(cls, config_path: str = default_config_path):
         with open(config_path, "r") as f:
             config = yaml.load(f, Loader=yaml.FullLoader)
+        cls.config_checks(config)
+        cls.git_checks()
         system_configuration = config["system_configuration"]
         system = system_configuration["name"]
         queue = system_configuration["queue"]
@@ -90,6 +94,49 @@ class SlurmScriptMaker:
             num_runs=num_samples,
             output_path=paths["results_path"],
         )
+    
+    @staticmethod
+    def config_checks(config):
+        paths = parse_paths(
+            config["paths_configuration"], 
+            region=config["region"], 
+            iteration=config["iteration"]
+        )
+        wp = paths["world_path"].stem
+        if config["region"] not in paths["world_path"].stem:
+            print("CHECK:\n     Have you set the world_path or region in config correctly?")
+        if paths["world_path"].exists() is False:
+            print("CHECK:\n     world_path does not exist.")
+        return None
+
+    @staticmethod
+    def git_checks():
+        june_git = Path(june.__path__[0]).parent / '.git'
+        branch_cmd = f'git --git-dir {june_git} rev-parse --abbrev-ref HEAD'.split()
+        try:
+            branch = subprocess.run(
+                branch_cmd,stdout=subprocess.PIPE
+            ).stdout.decode('utf-8').strip()
+        except:
+            return None
+        if branch != 'master':
+            print(f"You\'re running on branch {branch.upper()}")
+        else:
+            local_SHA_cmd = f'git --git-dir {june_git} log -n 1 --format="%h"'.split()
+            remote_SHA_cmd = f'git --git-dir {june_git} log -n 1 --format="%h"'.split()
+            try:
+                local_SHA = subprocess.run(
+                    local_SHA_cmd,stdout=subprocess.PIPE
+                ).stdout.decode('utf-8').strip()
+                remote_SHA = subprocess.run(
+                    remote_SHA_cmd,stdout=subprocess.PIPE
+                ).stdout.decode('utf-8').strip()
+            except:
+                return None
+            if local_SHA != remote_SHA:
+                print(f"On {branch}, and your JUNE git SHA is {local_SHA}. Is this the latest master?")
+            return None
+
 
     def make_script_lines(self, script_number, index_low, index_high):
         stdout_name = (
@@ -105,7 +152,7 @@ class SlurmScriptMaker:
         elif self.system == "cosma":
             loading_python = [
                 f"module purge",
-                f"module load pythonconda3/2020-02",
+                f"module load python/3.6.5",
                 f"module load gnu_comp/7.3.0",
                 f"module load hdf5",
                 f"module load openmpi/3.0.1",
@@ -120,6 +167,8 @@ class SlurmScriptMaker:
         else:
             email_lines = []
                 
+        python_cmd = f"python3 -u {self.runner_path.absolute()} {self.config_path.absolute()} -i %d "
+
         script_lines = (
             [
                 "#!/bin/bash -l",
@@ -136,7 +185,7 @@ class SlurmScriptMaker:
             + email_lines
             + loading_python
             + [
-                f'mpirun -np {index_high-index_low+1} {self.parallel_tasks_path.absolute()} {index_low} {index_high} "python -u {self.runner_path.absolute()} {self.config_path.absolute()} -i %d "',
+                f'mpirun -np {index_high-index_low+1} {self.parallel_tasks_path.absolute()} {index_low} {index_high} "{python_cmd}"',
             ]
         )
         return script_lines
