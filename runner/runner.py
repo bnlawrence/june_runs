@@ -119,7 +119,6 @@ class Runner:
     def from_file(cls, config_path: str = default_config_file):
         with open(config_path, "r") as f:
             config = yaml.load(f, Loader=yaml.FullLoader)
-        print(config)
         return cls(**config)
 
     @staticmethod
@@ -235,9 +234,7 @@ class Runner:
 
     def generate_simulator(self, parameter_index, verbose=None):
         if verbose is None:
-            print('in if')
             verbose=self.verbose
-        print('verbose is', verbose)
         parameters_dict = self.parameter_generator[parameter_index]
         verbose_print(f"{parameter_index} params:",parameters_dict, verbose=verbose) #
         run_name = f"run_{parameter_index:03}"

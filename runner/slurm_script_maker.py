@@ -97,9 +97,16 @@ class SlurmScriptMaker:
     
     @staticmethod
     def config_checks(config):
-        wp = config["paths_configuration"]["world_path"].split('/')[-1].split('.')[0]
-        if config["region"] not in wp:
+        paths = parse_paths(
+            config["paths_configuration"], 
+            region=config["region"], 
+            iteration=config["iteration"]
+        )
+        wp = paths["world_path"].stem
+        if config["region"] not in paths["world_path"].stem:
             print("CHECK:\n     Have you set the world_path or region in config correctly?")
+        if paths["world_path"].exists() is False:
+            print("CHECK:\n     world_path does not exist.")
         return None
 
     @staticmethod
