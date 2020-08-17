@@ -305,7 +305,14 @@ class Runner:
 
         hospital_path = summary_dir / f"hospital_summary_{parameter_index:03}.csv"
         save_hospital_summary(logger,hospital_path)
-        
+
+        infection_locations_path = summary_dir / f"total_infection_locations_{parameter_index:03}.csv"
+        save_infection_locations(logger, infection_locations_path)
+
+        inf_loc_ts_path = summary_dir / f"infection_loc_timeseries_{parameter_index:03}.csv"
+        daily_loc_ts_path = summary_dir / f"daily_infection_loc_timeseries_{parameter_index:03}.csv"
+        save_location_infections_timeseries(logger, inf_loc_ts_path,daily_loc_ts_path)
+
         return None
         
 

@@ -120,6 +120,24 @@ def save_age_summaries(logger, age_summary_path, daily_age_summary_path, age_bin
 def save_hospital_summary(logger,hospital_summary_path):
     hospital_df = logger.load_hospital_capacity()
     hospital_df.to_csv(hospital_summary_path)
+
+    return None
+
+def save_infection_locations(logger,infection_locations_path):
+    inf_loc_df = logger.get_locations_infections()
+    inf_loc_df.to_csv(infection_locations_path)
+
+    return None
+
+def save_location_infections_timeseries(
+    logger,inf_loc_timeseries_path, daily_inf_loc_timeseries_path
+):
+    inf_loc_ts = logger.get_location_infections_timeseries()
+    inf_loc_ts.to_csv(inf_loc_timeseries_path)
+
+    inf_loc_ts.index = pd.to_datetime(inf_loc_ts.index)
+    daily_inf_loc_ts = inf_loc_ts.resample('D').sum()
+    daily_inf_loc_ts.to_csv(daily_inf_loc_timeseries_path)
     return None
 
 

@@ -16,8 +16,6 @@ setup = bool(args.setup)
 config_path = args.run_configuration
 
 if setup:
-    #branch = os.popen('git --git-dir rev-parse 
-
     slurm_script_maker = SlurmScriptMaker.from_file(config_path)
     slurm_script_maker.make_scripts()
 else:
