@@ -18,7 +18,7 @@ from june.groups.leisure import generate_leisure_for_config, Cinemas, Pubs, Groc
 from june.simulator import Simulator
 from june.infection_seed import InfectionSeed, Observed2Cases
 from june.policy import Policy, Policies, SocialDistancing, Quarantine
-from june.infection.infection import InfectionSelector
+from june.infection import InfectionSelector
 from june.hdf5_savers import generate_world_from_hdf5
 from june import paths
 from june.logger.read_logger import ReadLogger

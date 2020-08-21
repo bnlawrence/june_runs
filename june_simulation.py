@@ -125,7 +125,8 @@ else:
     asymptomatic_ratio = 0.2
 
 health_index_generator = HealthIndexGenerator.from_file(
-    asymptomatic_ratio=asymptomatic_ratio
+    asymptomatic_ratio=asymptomatic_ratio,
+    adjust_hospitalisation_adults=True
 )
 
 
@@ -224,6 +225,7 @@ else:
 oc = Observed2Cases.from_file(
     super_areas=world.super_areas, 
     health_index = selector.health_index_generator,
+    smoothing=True
     )
 n_cases_df = oc.cases_from_deaths()
 # Seed over 5 days
