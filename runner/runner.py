@@ -19,7 +19,7 @@ from june.simulator import Simulator
 from june.infection_seed import InfectionSeed, Observed2Cases
 from june.policy import Policy, Policies, SocialDistancing, Quarantine
 from june.infection.infection import InfectionSelector
-from june.world import generate_world_from_hdf5
+from june.hdf5_savers import generate_world_from_hdf5
 from june import paths
 from june.logger.read_logger import ReadLogger
 from .parameter_generator import ParameterGenerator
