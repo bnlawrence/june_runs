@@ -197,7 +197,7 @@ class SlurmScriptMaker:
         script_names = []
         for i in range(number_of_scripts):
             idx1 = i * self.jobs_per_node
-            idx2 = (i + 1) * self.jobs_per_node - 1
+            idx2 = min((i + 1) * self.jobs_per_node - 1, self.num_runs - 1) 
             script_lines = self.make_script_lines(
                 script_number=i, index_low=idx1, index_high=idx2
             )
