@@ -29,6 +29,7 @@ class SlurmScriptMaker:
         iteration=1,
         num_runs=250,
         output_path="june_results",
+        stdout_path=None,
         parallel_tasks_path=default_parallel_tasks_path,
         runner_path=default_run_simulation_script,
     ):
@@ -47,7 +48,10 @@ class SlurmScriptMaker:
         self.num_runs = num_runs
         self.output_path = output_path
         self.config_path = Path(config_path)
-        self.stdout_dir = self.output_path / "stdout"
+        if stdout_path is None or stdout_path == "default":
+            self.stdout_dir = self.output_path / "stdout"
+        else:
+            self.stdout_dir = stdout_path
         self.stdout_dir.mkdir(parents=True, exist_ok=True)
 
     @classmethod
@@ -93,6 +97,7 @@ class SlurmScriptMaker:
             iteration=iteration,
             num_runs=num_samples,
             output_path=paths["results_path"],
+            stdout_path=paths["stdout_path"]
         )
     
     @staticmethod
