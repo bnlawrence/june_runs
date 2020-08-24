@@ -28,6 +28,7 @@ class SlurmScriptMaker:
         region="london",
         iteration=1,
         num_runs=250,
+        parameters_to_run="all",
         output_path="june_results",
         parallel_tasks_path=default_parallel_tasks_path,
         runner_path=default_run_simulation_script,
@@ -41,6 +42,7 @@ class SlurmScriptMaker:
         self.email_address = email_address
         self.iteration = iteration
         self.max_time = max_time
+        self.parameters_to_run = parameters_to_run
         self.max_cpus_per_node = queue_to_max_cpus[queue]
         self.parallel_tasks_path = Path(parallel_tasks_path)
         self.runner_path = Path(runner_path)
@@ -75,6 +77,7 @@ class SlurmScriptMaker:
         region = config["region"]
         iteration = config["iteration"]
         num_samples = config["parameter_configuration"]["number_of_samples"]
+        parameters_to_run = config["parameter_configuration"]["parameters_to_run"]
         paths = parse_paths(
             config["paths_configuration"], region=region, iteration=iteration
         )
@@ -92,6 +95,7 @@ class SlurmScriptMaker:
             region=region,
             iteration=iteration,
             num_runs=num_samples,
+            parameters_to_run=parameters_to_run,
             output_path=paths["results_path"],
         )
     
@@ -193,13 +197,17 @@ class SlurmScriptMaker:
     def make_scripts(self):
         script_dir = self.output_path / "slurm_scripts"
         script_dir.mkdir(exist_ok=True, parents=True)
-        number_of_scripts = int(np.ceil(self.num_runs / self.jobs_per_node))
+        if self.parameters_to_run == "all":
+            parameters_to_run = np.arange(0, self.num_runs)
+        else:
+            parameters_to_run = self.parameters_to_run
+        number_of_scripts = int(np.ceil(len(parameters_to_run)/ self.jobs_per_node))
         script_names = []
         for i in range(number_of_scripts):
             idx1 = i * self.jobs_per_node
             idx2 = min((i + 1) * self.jobs_per_node - 1, self.num_runs - 1) 
             script_lines = self.make_script_lines(
-                script_number=i, index_low=idx1, index_high=idx2
+                script_number=i, index_low=parameters_to_run[idx1], index_high=parameters_to_run[idx2]
             )
             script_name = script_dir / f"{self.region}_{i:03}.sh"
             script_names.append(script_name)

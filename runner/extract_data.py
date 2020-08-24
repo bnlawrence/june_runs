@@ -50,6 +50,8 @@ def save_age_summaries(logger, age_summary_path, daily_age_summary_path, age_bin
 
     if age_bins is None:
         age_bins = [0, 6, 18, 65, 85, 100]
+    elif age_bins == "individual":
+        age_bins = np.arange(0,101)
 
     age_df = logger.age_summary(age_bins)
     age_df.index = pd.to_datetime(age_df.index)  
