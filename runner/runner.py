@@ -67,7 +67,9 @@ def parse_paths(paths_configuration, region, iteration):
     ret["results_path"].mkdir(exist_ok=True, parents=True)
 
     ret["summary_path"] = ret["summary_path"] / region / f"iteration_{iteration:02}"
-    ret["summary_path"].mkdir(exist_ok=True, parents=True)    
+    ret["summary_path"].mkdir(exist_ok=True, parents=True)   
+
+     
 
     return ret
 
