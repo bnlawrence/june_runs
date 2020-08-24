@@ -50,7 +50,7 @@ class SlurmScriptMaker:
         self.num_runs = num_runs
         self.output_path = output_path
         self.config_path = Path(config_path)
-        if stdout_path is None or stdout_path == "default":
+        if stdout_path is None or stdout_path == Path("default"):
             self.stdout_dir = self.output_path / "stdout"
         else:
             self.stdout_dir = stdout_path
