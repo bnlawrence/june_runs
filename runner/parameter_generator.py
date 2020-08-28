@@ -20,6 +20,7 @@ class ParameterGenerator:
         self.parameter_dict = self._read_parameter_configuration(
             parameter_configuration
         )
+        self.parameters_to_run = parameter_configuration["parameters_to_run"]
         self.num_samples = parameter_configuration["number_of_samples"]
         self.lhs_array = self._generate_lhs_array()
         # self.lhs_array = self._generate_lhs_array_from_config()
@@ -66,14 +67,16 @@ class ParameterGenerator:
         idx is an integer that should be passed from each run,
         i.e. first run will have idx = 0, second run idx = 1...
         This will index out the row from the latin hypercube."""
-        parameter_values = self.lhs_array[idx]
+        index_to_run = self.parameters_to_run[idx]
+        parameter_values = self.lhs_array[index_to_run]
         ret = {}
         for i, parameter_name in enumerate(self.parameter_dict.keys()):
             ret[parameter_name] = parameter_values[i]
+        ret["run_number"] = index_to_run
         return ret
 
     def __getitem__(self, idx):
         return self.get_parameters_from_index(idx)
 
     def __iter__(self):
-        return iter([self[idx] for idx in range(self.num_samples)])
+        return iter([self[idx] for idx in self.parameters_to_run])

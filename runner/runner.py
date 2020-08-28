@@ -238,8 +238,9 @@ class Runner:
         if verbose is None:
             verbose=self.verbose
         parameters_dict = self.parameter_generator[parameter_index]
-        verbose_print(f"{parameter_index} params:",parameters_dict, verbose=verbose) #
-        run_name = f"run_{parameter_index:03}"
+        run_number = parameters_dict["run_number"]
+        verbose_print(f"Run number {run_number} params:",parameters_dict, verbose=verbose) #
+        run_name = f"run_{run_number:03}"
         save_path = self.paths_configuration["results_path"] / run_name
         save_path.mkdir(exist_ok=True, parents=True)
         with open(save_path / "parameters.json", "w") as f:

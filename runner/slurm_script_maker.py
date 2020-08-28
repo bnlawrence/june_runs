@@ -6,7 +6,7 @@ import subprocess
 from .runner import parse_paths
 import june
 
-queue_to_max_cpus = {"cosma": 16, "cosma6": 16, "cosma7": 28, "jasmin": 20}
+queue_to_max_cpus = {"cosma": 16, "cosma6": 16, "cosma7": 28, "jasmin": 20, "cosma-prince" : 16}
 default_parallel_tasks_path = (
     Path(__file__).parent.parent / "parallel_tasks/parallel_tasks"
 )
@@ -210,9 +210,9 @@ class SlurmScriptMaker:
         script_names = []
         for i in range(number_of_scripts):
             idx1 = i * self.jobs_per_node
-            idx2 = min((i + 1) * self.jobs_per_node - 1, self.num_runs - 1) 
+            idx2 = min((i + 1) * self.jobs_per_node - 1, len(parameters_to_run) - 1) 
             script_lines = self.make_script_lines(
-                script_number=i, index_low=parameters_to_run[idx1], index_high=parameters_to_run[idx2]
+                script_number=i, index_low=idx1, index_high=idx2
             )
             script_name = script_dir / f"{self.region}_{i:03}.sh"
             script_names.append(script_name)
