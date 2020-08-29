@@ -4,6 +4,7 @@ import yaml
 import subprocess
 
 from .runner import parse_paths
+from .parameter_generator import _read_parameters_to_run
 import june
 
 queue_to_max_cpus = {"cosma": 16, "cosma6": 16, "cosma7": 28, "jasmin": 20, "cosma-prince" : 16}
@@ -43,11 +44,11 @@ class SlurmScriptMaker:
         self.email_address = email_address
         self.iteration = iteration
         self.max_time = max_time
-        self.parameters_to_run = parameters_to_run
+        self.num_runs = num_runs
+        self.parameters_to_run = _read_parameters_to_run(parameters_to_run, num_runs)
         self.max_cpus_per_node = queue_to_max_cpus[queue]
         self.parallel_tasks_path = Path(parallel_tasks_path)
         self.runner_path = Path(runner_path)
-        self.num_runs = num_runs
         self.output_path = output_path
         self.config_path = Path(config_path)
         if stdout_path is None or stdout_path == Path("default"):
@@ -202,15 +203,11 @@ class SlurmScriptMaker:
     def make_scripts(self):
         script_dir = self.output_path / "slurm_scripts"
         script_dir.mkdir(exist_ok=True, parents=True)
-        if self.parameters_to_run == "all":
-            parameters_to_run = np.arange(0, self.num_runs)
-        else:
-            parameters_to_run = self.parameters_to_run
-        number_of_scripts = int(np.ceil(len(parameters_to_run)/ self.jobs_per_node))
+        number_of_scripts = int(np.ceil(len(self.parameters_to_run)/ self.jobs_per_node))
         script_names = []
         for i in range(number_of_scripts):
             idx1 = i * self.jobs_per_node
-            idx2 = min((i + 1) * self.jobs_per_node - 1, len(parameters_to_run) - 1) 
+            idx2 = min((i + 1) * self.jobs_per_node - 1, len(self.parameters_to_run) - 1) 
             script_lines = self.make_script_lines(
                 script_number=i, index_low=idx1, index_high=idx2
             )

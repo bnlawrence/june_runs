@@ -9,6 +9,14 @@ from collections import OrderedDict, defaultdict
 
 default_config_file = Path(__file__).parent.parent / "run_configs/config_example.yaml"
 
+def _read_parameters_to_run(parameters_to_run, num_runs):
+    if type(parameters_to_run) == str:
+        if parameters_to_run == "all":
+            parameters_to_run = np.arange(0, num_runs)
+        else:
+            low, high = list(map(int, parameters_to_run.split("-")))
+            parameters_to_run = np.arange(low, high+1)
+    return parameters_to_run
 
 class ParameterGenerator:
     """
@@ -20,8 +28,8 @@ class ParameterGenerator:
         self.parameter_dict = self._read_parameter_configuration(
             parameter_configuration
         )
-        self.parameters_to_run = parameter_configuration["parameters_to_run"]
         self.num_samples = parameter_configuration["number_of_samples"]
+        self.parameters_to_run = _read_parameters_to_run(parameter_configuration["parameters_to_run"], self.num_samples)
         self.lhs_array = self._generate_lhs_array()
         # self.lhs_array = self._generate_lhs_array_from_config()
 
@@ -72,7 +80,7 @@ class ParameterGenerator:
         ret = {}
         for i, parameter_name in enumerate(self.parameter_dict.keys()):
             ret[parameter_name] = parameter_values[i]
-        ret["run_number"] = index_to_run
+        ret["run_number"] = int(index_to_run)
         return ret
 
     def __getitem__(self, idx):
