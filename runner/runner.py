@@ -23,7 +23,8 @@ from june.hdf5_savers import generate_world_from_hdf5
 from june import paths
 from june.logger.read_logger import ReadLogger
 from .parameter_generator import ParameterGenerator
-from .extract_data import *
+from .extract_data_new import *
+from .plotter import Plotter
 
 default_config_file = Path(__file__).parent.parent / "run_configs/config_example.yaml"
 
@@ -285,6 +286,7 @@ class Runner:
         t1 = time.time()
         try:
             logger = ReadLogger(logger_dir)
+            logger.load_infection_location()
         except Exception as e:
             print(str(e))
             l1 = '***'+19*' '+'***'
@@ -292,6 +294,11 @@ class Runner:
             return None
         t2 = time.time()
         verbose_print(f"{(t2-t1)/60.}",verbose=verbose)
+
+        # contains info on super areas, probably the most complete run summary
+        run_summary_path = summary_dir / f"run_summary_{parameter_index:03}.csv"
+        daily_regional_path = summary_dir / f"daily_regional_summary_{parameter_index:03}.csv"
+        save_regional_summaries(logger, run_summary_path, daily_regional_path)
 
         world_path = summary_dir / f"world_summary_{parameter_index:03}.csv"
         daily_world_path = summary_dir / f"daily_world_summary_{parameter_index:03}.csv"
@@ -310,11 +317,18 @@ class Runner:
         save_hospital_summary(logger,hospital_path)
 
         infection_locations_path = summary_dir / f"total_infection_locations_{parameter_index:03}.csv"
-        save_infection_locations(logger, infection_locations_path)
-
-        inf_loc_ts_path = summary_dir / f"infection_loc_timeseries_{parameter_index:03}.csv"
         daily_loc_ts_path = summary_dir / f"daily_infection_loc_timeseries_{parameter_index:03}.csv"
-        save_location_infections_timeseries(logger, inf_loc_ts_path,daily_loc_ts_path)
+        save_infection_locations(logger, infection_locations_path,daily_loc_ts_path)
+
+        # logger does these differently now
+        # inf_loc_ts_path = summary_dir / f"infection_loc_timeseries_{parameter_index:03}.csv"
+        # save_location_infections_timeseries(logger, inf_loc_ts_path,daily_loc_ts_path)
+
+        real_data_path = Path('/cosma5/data/durham/dc-truo1/june_analysis')
+        # real_data_path = Path('/home/htruong/Documents/JUNE/Notebooks')
+        plotter = Plotter(logger, real_data_path, summary_dir, parameter_index)
+        plotter.plot_region_data()
+        plotter.plot_age_stratified()
 
         return None
         
