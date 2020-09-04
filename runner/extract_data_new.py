@@ -78,7 +78,6 @@ def save_world_summaries(logger,world_summary_path,daily_summary_path):
 
     world_df['seroprevalence'] = 100.*world_df['daily_infections'].cumsum() / world_pop
 
-    # keep daily columns
     daily_world_df = world_df.filter(regex="daily_*").resample('D').sum()
     current_world_df = world_df.filter(regex="current_*").resample('D').last()
     daily_world_df = pd.concat([current_world_df, daily_world_df], axis=1)

@@ -52,31 +52,10 @@ class Plotter():
         return data
 
     def load_5year_data(self):
-         # Tristan's bootstrapped data
-        # admissions_data = pd.read_csv(self.admissions_data_path, index_col='Unnamed: 0')
-        # admissions_regions = admissions_data['Region'].unique()
-        # admissions_bands = admissions_data['Band'].unique()
-
         deaths_data = pd.read_csv(self.deaths_data_path)
         deaths_data = deaths_data.melt(id_vars=['region_name', 'date_of_death'], var_name='Band', value_name='Deaths')
         deaths_regions = deaths_data['region_name'].unique()
         deaths_bands = deaths_data['Band'].unique()
-
-        # make data more easily plottable
-        # admissions_df = {}
-        # for band in admissions_bands:
-        #     dfs = {}
-        #     for region in admissions_regions:
-        #         tmp_df = admissions_data[(admissions_data['Band']==band) & (admissions_data['Region']==region)].filter(items=['Date', 'Admissions'])
-        #         tmp_df.index = pd.to_datetime(tmp_df['Date'])
-        #         tmp_df.drop(columns=['Date'], inplace=True)
-        #         if region == 'East Of England':
-        #             region = region.replace('Of', 'of')
-        #         elif region == 'North East And Yorkshire':
-        #             region = region.replace('And', 'and')
-        #         dfs[region] = tmp_df
-        #     admissions_df[band] = pd.concat({key: val for key, val in dfs.items()})
-        # admissions_df = pd.concat({key: val for key, val in admissions_df.items()})
 
         deaths_df = {}
         for band in deaths_bands:
@@ -155,31 +134,47 @@ class Plotter():
         return None
     
     def create_regional_summaries(self):
-        # TODO link up with csvs
-        run_summary = self.logger.run_summary()
-        regional_run_summary = run_summary.groupby(['region', run_summary.index]).sum()
-        all_regions = regional_run_summary.index.get_level_values(0).unique()
+        csv_path = self.summary_dir / f"daily_regional_summary_{self.parameter_index:03}.csv"
+        if os.path.exists(csv_path):
+            regional_run_summary = pd.read_csv(csv_path)
+            dfs = {}
+            for name, group in regional_run_summary.groupby('region'):
+                dfs[name] = group.iloc[:, 1:].set_index('time_stamp')
+                dfs[name].index = pd.to_datetime(dfs[name].index)
+            regional_run_summary = pd.concat({key: val for key, val in sorted(dfs.items())})
 
-        # group Midlands together and North East and Yorkshire
-        regional_run_summary = group_all_region_df(regional_run_summary, all_regions)
+            # get region names and time stamps for plotting
+            self.plotting_regions = regional_run_summary.index.get_level_values(0).unique()
+            self.time_stamps = regional_run_summary.index.get_level_values(1).unique()
+        else:
+            run_summary = self.logger.run_summary()
+            regional_run_summary = run_summary.groupby(['region', run_summary.index]).sum()
+            all_regions = regional_run_summary.index.get_level_values(0).unique()
 
-        # get region names and time stamps for plotting
-        self.plotting_regions = regional_run_summary.index.get_level_values(0).unique()
-        self.time_stamps = regional_run_summary.index.get_level_values(1).unique()
+            # group Midlands together and North East and Yorkshire
+            regional_run_summary = group_all_region_df(regional_run_summary, all_regions)
 
-        # calculate region populations
-        region_populations = {region: regional_run_summary[self.total_pop_cols].loc[region].iloc[0].sum() for region in self.plotting_regions}
+            # get region names and time stamps for plotting
+            self.plotting_regions = regional_run_summary.index.get_level_values(0).unique()
+            self.time_stamps = regional_run_summary.index.get_level_values(1).unique()
 
-        for region in self.plotting_regions:
-            seroprev_df = 100. * regional_run_summary.loc[region, 'daily_infections'].cumsum() / region_populations[region]
-            seroprev_df.index = pd.MultiIndex.from_product([[region], regional_run_summary.loc[region].index.get_level_values(0)])
-            regional_run_summary.loc[region, 'seroprevalence'] = seroprev_df
+            # calculate region populations
+            region_populations = {region: regional_run_summary[self.total_pop_cols].loc[region].iloc[0].sum() for region in self.plotting_regions}
+
+            for region in self.plotting_regions:
+                seroprev_df = 100. * regional_run_summary.loc[region, 'daily_infections'].cumsum() / region_populations[region]
+                seroprev_df.index = pd.MultiIndex.from_product([[region], regional_run_summary.loc[region].index.get_level_values(0)])
+                regional_run_summary.loc[region, 'seroprevalence'] = seroprev_df
 
         return regional_run_summary
 
     def create_age_summaries(self, sitrep_bins=False):
-        # TODO link up with csvs
-        ages_df = self.logger.age_summary(np.arange(0, 101))
+        csv_path = self.summary_dir / f"age_summary_{self.parameter_index:03}.csv"
+        if os.path.exists(csv_path):
+            ages_df = pd.read_csv(csv_path, index_col='time_stamp')
+            ages_df.index = pd.to_datetime(ages_df.index)
+        else:
+            ages_df = self.logger.age_summary(np.arange(0, 101))
 
         # create daily summaries of daily columns
         dfs = []
@@ -256,7 +251,7 @@ class Plotter():
             if self.real_data['sitrep']:
                 deaths_df = self.deaths_sitrep_data_df
                 admissions_df = self.admissions_sitrep_data_df
-            fig_params = {'nrows': 2, 'ncols': 3, 'figsize': (20, 12), 'sharex': True}
+            fig_params = {'nrows': 2, 'ncols': 3, 'figsize': (20, 10), 'sharex': True}
         else:
             pdf = matplotlib.backends.backend_pdf.PdfPages(self.plot_save_dir / f'age_plots_5yearbins_{self.parameter_index:03}.pdf')
             df = self.daily_age_summary
@@ -349,12 +344,4 @@ class Plotter():
         return None
 
 if __name__ == "__main__":
-    t0 = time.time()
-    logger_path = Path('/home/htruong/Documents/JUNE/Notebooks/results')
-    real_data_path = Path('/home/htruong/Documents/JUNE/Notebooks/')
-    save_path = Path('./')
-    logger = ReadLogger(logger_path)
-    plotter = Plotter(logger, real_data_path)
-    plotter.plot_region_data(save_path)
-    plotter.plot_age_stratified(save_path)
-    print("Total time = {:.1f}s".format(time.time() - t0))
+    print('no main block')
