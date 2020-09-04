@@ -324,11 +324,12 @@ class Runner:
         # inf_loc_ts_path = summary_dir / f"infection_loc_timeseries_{parameter_index:03}.csv"
         # save_location_infections_timeseries(logger, inf_loc_ts_path,daily_loc_ts_path)
 
-        real_data_path = Path('/cosma5/data/durham/dc-truo1/june_analysis')
-        # real_data_path = Path('/home/htruong/Documents/JUNE/Notebooks')
+        # real_data_path = Path('/cosma5/data/durham/dc-truo1/june_analysis')
+        real_data_path = Path('/home/htruong/Documents/JUNE/Notebooks')
         plotter = Plotter(logger, real_data_path, summary_dir, parameter_index)
         plotter.plot_region_data()
-        plotter.plot_age_stratified()
+        plotter.plot_age_stratified(sitrep_bins=False)
+        plotter.plot_age_stratified(sitrep_bins=True)
 
         return None
         

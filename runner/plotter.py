@@ -34,26 +34,78 @@ class Plotter():
                                'current_susceptible']
         self.real_data_path = real_data_path
         self.real_data = self.check_real_data()
-        if self.real_data:
-            self.admissions_df, self.deaths_df = self.load_real_data()
+        self.load_real_data(self.real_data)
         self.regional_run_summary = self.create_regional_summaries()
-        self.daily_age_summary, self.age_labels = self.create_age_summaries()
+        self.daily_age_summary, self.age_labels = self.create_age_summaries(sitrep_bins=False)
+        self.daily_age_summary_sitrep, self.age_labels_sitrep = self.create_age_summaries(sitrep_bins=True)
 
     def check_real_data(self):
-        self.admissions_data_path = self.real_data_path / 'new-sitrep-admissions-v2-mean.csv'
+        self.admissions_sitrep_data_path = self.real_data_path / 'new-sitrep-admissions-v2-mean.csv'
         self.deaths_data_path = self.real_data_path / 'regional_deaths_5year_strat.csv'
-        if os.path.exists(self.admissions_data_path) and os.path.exists(self.deaths_data_path):
-            return True
-        else:
-            return False
+        self.deaths_sitrep_data_path = self.real_data_path / 'regional_deaths_sitrep_strat.csv'
 
-    def load_real_data(self):
+        data = {'sitrep': False, '5year': False}
+        if os.path.exists(self.admissions_sitrep_data_path) and os.path.exists(self.deaths_sitrep_data_path):
+            data['sitrep'] = True
+        if os.path.exists(self.deaths_data_path):
+            data['5year'] = True
+        return data
+
+    def load_5year_data(self):
+         # Tristan's bootstrapped data
+        # admissions_data = pd.read_csv(self.admissions_data_path, index_col='Unnamed: 0')
+        # admissions_regions = admissions_data['Region'].unique()
+        # admissions_bands = admissions_data['Band'].unique()
+
+        deaths_data = pd.read_csv(self.deaths_data_path)
+        deaths_data = deaths_data.melt(id_vars=['region_name', 'date_of_death'], var_name='Band', value_name='Deaths')
+        deaths_regions = deaths_data['region_name'].unique()
+        deaths_bands = deaths_data['Band'].unique()
+
+        # make data more easily plottable
+        # admissions_df = {}
+        # for band in admissions_bands:
+        #     dfs = {}
+        #     for region in admissions_regions:
+        #         tmp_df = admissions_data[(admissions_data['Band']==band) & (admissions_data['Region']==region)].filter(items=['Date', 'Admissions'])
+        #         tmp_df.index = pd.to_datetime(tmp_df['Date'])
+        #         tmp_df.drop(columns=['Date'], inplace=True)
+        #         if region == 'East Of England':
+        #             region = region.replace('Of', 'of')
+        #         elif region == 'North East And Yorkshire':
+        #             region = region.replace('And', 'and')
+        #         dfs[region] = tmp_df
+        #     admissions_df[band] = pd.concat({key: val for key, val in dfs.items()})
+        # admissions_df = pd.concat({key: val for key, val in admissions_df.items()})
+
+        deaths_df = {}
+        for band in deaths_bands:
+            dfs = {}
+            for region in deaths_regions:
+                tmp_df = deaths_data[(deaths_data['Band']==band) & (deaths_data['region_name']==region)].filter(items=('date_of_death', 'Deaths'))
+                tmp_df.index = pd.to_datetime(tmp_df['date_of_death'])
+                tmp_df.drop(columns=['date_of_death'], inplace=True)
+                if region == 'East Of England':
+                    region = region.replace('Of', 'of')
+                dfs[region] = tmp_df
+            dfs['All regions'] = pd.concat({key: val for key, val in dfs.items()}).sum(level=1).sort_index()
+            deaths_df[band] = pd.concat({key: val for key, val in sorted(dfs.items())})
+        deaths_df['All ages'] = pd.concat({key: val for key, val in deaths_df.items()}).sum(level=[1,2]).sort_index()
+        deaths_df = pd.concat({key: val for key, val in deaths_df.items()})
+
+        self.deaths_data_df = deaths_df
+
+        return None
+
+    def load_sitrep_data(self):
         # Tristan's bootstrapped data
-        admissions_data = pd.read_csv(self.admissions_data_path, index_col='Unnamed: 0')
+        admissions_data = pd.read_csv(self.admissions_sitrep_data_path, index_col='Unnamed: 0')
+        admissions_data.replace({'Admissions_85+': 'Admissions_85-99'}, inplace=True)
         admissions_regions = admissions_data['Region'].unique()
         admissions_bands = admissions_data['Band'].unique()
 
-        deaths_data = pd.read_csv(self.deaths_data_path)
+        deaths_data = pd.read_csv(self.deaths_sitrep_data_path)
+        deaths_data.rename(columns={'85+': '85-99'}, inplace=True)
         deaths_data = deaths_data.melt(id_vars=['region_name', 'date_of_death'], var_name='Band', value_name='Deaths')
         deaths_regions = deaths_data['region_name'].unique()
         deaths_bands = deaths_data['Band'].unique()
@@ -71,7 +123,8 @@ class Plotter():
                 elif region == 'North East And Yorkshire':
                     region = region.replace('And', 'and')
                 dfs[region] = tmp_df
-            admissions_df[band] = pd.concat({key: val for key, val in dfs.items()})
+            dfs['All regions'] = pd.concat({key: val for key, val in dfs.items()}).sum(level=1).sort_index()
+            admissions_df[band] = pd.concat({key: val for key, val in sorted(dfs.items())})
         admissions_df = pd.concat({key: val for key, val in admissions_df.items()})
 
         deaths_df = {}
@@ -89,7 +142,17 @@ class Plotter():
         deaths_df['All ages'] = pd.concat({key: val for key, val in deaths_df.items()}).sum(level=[1,2]).sort_index()
         deaths_df = pd.concat({key: val for key, val in deaths_df.items()})
 
-        return admissions_df, deaths_df
+        self.admissions_sitrep_data_df = admissions_df
+        self.deaths_sitrep_data_df = deaths_df
+
+        return None
+
+    def load_real_data(self, data_bool):
+        if data_bool['sitrep']:
+            self.load_sitrep_data()
+        if data_bool['5year']:
+            self.load_5year_data()
+        return None
     
     def create_regional_summaries(self):
         # TODO link up with csvs
@@ -114,7 +177,7 @@ class Plotter():
 
         return regional_run_summary
 
-    def create_age_summaries(self):
+    def create_age_summaries(self, sitrep_bins=False):
         # TODO link up with csvs
         ages_df = self.logger.age_summary(np.arange(0, 101))
 
@@ -126,8 +189,10 @@ class Plotter():
             dfs.append(tmp_df)
         daily_age_df = pd.concat(dfs)
 
-        # currently plot in 5 year age bins
-        age_range = np.arange(0, 100+1, 5)
+        if sitrep_bins:
+            age_range = [0, 5, 17, 64, 84, 99]
+        else:
+            age_range = np.arange(0, 100+1, 5)
         labels = ['_'.join((str(age_range[i]+1), str(age_range[i+1]))) for i in range(len(age_range)-1)]
         labels[0] = '0_5'
         # assign age ranges
@@ -158,14 +223,14 @@ class Plotter():
                         + self.regional_run_summary.loc[region]['daily_deaths_icu'], label='june')
             ax[3, i].plot(self.regional_run_summary.loc[region]['seroprevalence'])
             
-            if self.real_data:
+            if self.real_data['sitrep']:
                 # doesn't always work depending on regions available in data...
                 try:
-                    ax[1, i].plot(self.admissions_df.loc['Admissions_Total', region], label='data', color='k')
+                    ax[1, i].plot(self.admissions_sitrep_data_df.loc['Admissions_Total', region], label='data', color='k')
                 except:
                     continue
                 try:
-                    ax[2, i].plot(self.deaths_df.loc['All ages', region], label='data', color='k')
+                    ax[2, i].plot(self.deaths_sitrep_data_df.loc['All ages', region], label='data', color='k')
                 except:
                     continue
             
@@ -183,55 +248,85 @@ class Plotter():
         plt.savefig(self.plot_save_dir / f'region_plots_{self.parameter_index:03}.pdf', dpi=300, bbox_inches='tight')
         return None
 
-    def plot_age_stratified(self):
-        pdf = matplotlib.backends.backend_pdf.PdfPages(self.plot_save_dir / f'age_plots_{self.parameter_index:03}.pdf')
+    def plot_age_stratified(self, sitrep_bins=False):
+        if sitrep_bins:
+            pdf = matplotlib.backends.backend_pdf.PdfPages(self.plot_save_dir / f'age_plots_sitrep_{self.parameter_index:03}.pdf')
+            df = self.daily_age_summary_sitrep
+            labels = self.age_labels_sitrep
+            if self.real_data['sitrep']:
+                deaths_df = self.deaths_sitrep_data_df
+                admissions_df = self.admissions_sitrep_data_df
+            fig_params = {'nrows': 2, 'ncols': 3, 'figsize': (20, 12), 'sharex': True}
+        else:
+            pdf = matplotlib.backends.backend_pdf.PdfPages(self.plot_save_dir / f'age_plots_5yearbins_{self.parameter_index:03}.pdf')
+            df = self.daily_age_summary
+            labels = self.age_labels
+            if self.real_data['5year']:
+                deaths_df = self.deaths_data_df
+            fig_params = {'nrows': 4, 'ncols': 5, 'figsize': (28, 16), 'sharex': True}
 
         # hospital admissions plot
-        fig, ax = plt.subplots(4, 5, figsize=(28, 16), sharex=True)
+        fig, ax = plt.subplots(**fig_params)
         plt.suptitle('Age stratified daily hospital admissions for England', fontsize=24)
-        for i, axes in enumerate(ax.ravel()):
-            axes.set_title(self.age_labels[i])
-            axes.plot(self.daily_age_summary.loc[self.age_labels[i]]['daily_hospital_admissions'], label='june')
-            axes.legend()
-
-        self.format_axes(ax)
         for axes in ax.T[0]:
             axes.set_ylabel('Daily \n hospital admissions')
+        if sitrep_bins:
+            fig.delaxes(ax[1, 2])
+        ax = ax.ravel()
+        for i, label in enumerate(labels):
+            ax[i].set_title(label)
+            ax[i].plot(df.loc[label]['daily_hospital_admissions'], label='june')
+            # doesn't always work depending on regions available in data...
+            try:
+                ax[i].plot(admissions_df.loc['Admissions_' + label.replace('_', '-'), 'All regions'],
+                label='data', color='k')
+            except:
+                continue
+            ax[i].legend()
+
+        self.format_axes(ax)
         plt.subplots_adjust(top=0.90)
         pdf.savefig(fig, dpi=300, bbox_inches='tight')
 
         # daily deaths plot
-        fig, ax = plt.subplots(4, 5, figsize=(28, 16), sharex=True)
+        fig, ax = plt.subplots(**fig_params)
         plt.suptitle('Age stratified daily hospital deaths for England', fontsize=24)
-        for i, axes in enumerate(ax.ravel()):
-            axes.set_title(self.age_labels[i])
-            axes.plot(self.daily_age_summary.loc[self.age_labels[i]]['daily_deaths_hospital'] + \
-                      self.daily_age_summary.loc[self.age_labels[i]]['daily_deaths_icu'], label='june')
-            if self.real_data:
-                # doesn't always work depending on regions available in data...
-                try:
-                    axes.plot(self.deaths_df.loc[self.age_labels[i].replace('_', '-')].sum(level=1).sort_index(),
-                    label='data', color='k')
-                except:
-                    continue
-            axes.legend()
-        
-        self.format_axes(ax)
         for axes in ax.T[0]:
             axes.set_ylabel('Daily \n hospital deaths')
+        if sitrep_bins:
+            fig.delaxes(ax[1, 2])
+        ax = ax.ravel()
+        for i, label in enumerate(labels):
+            ax[i].set_title(label)
+            ax[i].plot(df.loc[label]['daily_deaths_hospital'] + \
+                       df.loc[label]['daily_deaths_icu'], label='june')
+            # doesn't always work depending on regions available in data...
+            try:
+                ax[i].plot(deaths_df.loc[label.replace('_', '-'), 'All regions'],
+                label='data', color='k')
+            except:
+                continue
+            ax[i].legend()
+        
+        self.format_axes(ax)
         plt.subplots_adjust(top=0.90)
         pdf.savefig(fig, dpi=300, bbox_inches='tight')
 
         # seroprevalence plot
-        fig, ax = plt.subplots(4, 5, figsize=(28, 16), sharex=True)
+        fig, ax = plt.subplots(**fig_params)
         plt.suptitle('Age stratified seroprevalence for England', fontsize=24)
-        for i, axes in enumerate(ax.ravel()):
-            axes.set_title(self.age_labels[i])
-            axes.plot(self.daily_age_summary.loc[self.age_labels[i]]['seroprevalence'])
-        
-        self.format_axes(ax)
         for axes in ax.T[0]:
             axes.set_ylabel('Percentage \n seroprevalence')
+        if sitrep_bins:
+            fig.delaxes(ax[1, 2])
+        ax = ax.ravel()
+        for i, label in enumerate(labels):
+            ax[i].set_title(label)
+            ax[i].plot(df.loc[label]['seroprevalence'])
+        
+        self.format_axes(ax)
+        for axes in ax:
+            axes.yaxis.set_major_formatter(mtick.PercentFormatter())
         plt.subplots_adjust(top=0.90)
         pdf.savefig(fig, dpi=300, bbox_inches='tight')
         
@@ -240,7 +335,7 @@ class Plotter():
 
     def format_axes(self, ax):
         for axes in ax.ravel():
-            axes.xaxis.set_major_locator(mdates.WeekdayLocator(mdates.MO))
+            # axes.xaxis.set_major_locator(mdates.WeekdayLocator(mdates.MO))
             for policy in self.policies.policies:
                 axes.axvspan(min(max(policy.start_time, self.time_stamps.min()), self.time_stamps.max()),
                             min(policy.end_time, self.time_stamps.max()),
