@@ -209,7 +209,7 @@ class Plotter():
 
     def plot_region_data(self):
         fig, ax = plt.subplots(4, len(self.plotting_regions), figsize=(6*len(self.plotting_regions), 15), sharex=True)
-        plt.suptitle('Run summaries for regions of England', fontsize=24)
+        plt.suptitle(f'Run summaries for regions of England (Run_{self.parameter_index:03})', fontsize=24)
         for i, region in enumerate(sorted(self.plotting_regions)):
             ax[0, i].set_title(region)
             ax[0, i].plot(self.regional_run_summary.loc[region]['daily_infections'])
@@ -251,7 +251,37 @@ class Plotter():
             if self.real_data['sitrep']:
                 deaths_df = self.deaths_sitrep_data_df
                 admissions_df = self.admissions_sitrep_data_df
-            fig_params = {'nrows': 2, 'ncols': 3, 'figsize': (20, 10), 'sharex': True}
+            fig_params = {'nrows': 4, 'ncols': 5, 'figsize': (28, 16), 'sharex': True}
+
+            fig, ax = plt.subplots(**fig_params)
+            plt.suptitle(f'Age stratified summaries for England (Run_{self.parameter_index:03})', fontsize=24)
+            for i, label in enumerate(labels):
+                ax[0, i].set_title(label)
+                ax[0, i].plot(df.loc[label]['daily_infections'])
+                ax[1, i].plot(df.loc[label]['daily_hospital_admissions'], label='june')
+                ax[2, i].plot(df.loc[label]['daily_deaths_hospital'] + \
+                              df.loc[label]['daily_deaths_icu'], label='june')
+                ax[3, i].plot(df.loc[label]['seroprevalence'])
+
+                try:
+                    ax[1, i].plot(admissions_df.loc['Admissions_' + label.replace('_', '-'), 'All regions'], label='data', color='k')
+                    ax[2, i].plot(deaths_df.loc[label.replace('_', '-'), 'All regions'], label='data', color='k')
+                except:
+                    continue
+
+            self.format_axes(ax)
+            ax[0, 0].set_ylabel('Daily infections')
+            ax[1, 0].set_ylabel('Daily \n hospital admissions')
+            ax[2, 0].set_ylabel('Daily \n hospital deaths')
+            ax[3, 0].set_ylabel('Percentage \n seroprevalence')
+            for axes in ax[1:3].ravel():
+                axes.legend()
+            for axes in ax[3]:
+                axes.yaxis.set_major_formatter(mtick.PercentFormatter())
+            plt.subplots_adjust(top=0.90)
+            pdf.savefig(fig, dpi=300, bbox_inches='tight')
+            pdf.close()
+                
         else:
             pdf = matplotlib.backends.backend_pdf.PdfPages(self.plot_save_dir / f'age_plots_5yearbins_{self.parameter_index:03}.pdf')
             df = self.daily_age_summary
@@ -260,72 +290,65 @@ class Plotter():
                 deaths_df = self.deaths_data_df
             fig_params = {'nrows': 4, 'ncols': 5, 'figsize': (28, 16), 'sharex': True}
 
-        # hospital admissions plot
-        fig, ax = plt.subplots(**fig_params)
-        plt.suptitle('Age stratified daily hospital admissions for England', fontsize=24)
-        for axes in ax.T[0]:
-            axes.set_ylabel('Daily \n hospital admissions')
-        if sitrep_bins:
-            fig.delaxes(ax[1, 2])
-        ax = ax.ravel()
-        for i, label in enumerate(labels):
-            ax[i].set_title(label)
-            ax[i].plot(df.loc[label]['daily_hospital_admissions'], label='june')
-            # doesn't always work depending on regions available in data...
-            try:
-                ax[i].plot(admissions_df.loc['Admissions_' + label.replace('_', '-'), 'All regions'],
-                label='data', color='k')
-            except:
-                continue
-            ax[i].legend()
+            # hospital admissions plot
+            fig, ax = plt.subplots(**fig_params)
+            plt.suptitle(f'Age stratified daily hospital admissions for England (Run_{self.parameter_index:03})', fontsize=24)
+            for axes in ax.T[0]:
+                axes.set_ylabel('Daily \n hospital admissions')
+            ax = ax.ravel()
+            for i, label in enumerate(labels):
+                ax[i].set_title(label)
+                ax[i].plot(df.loc[label]['daily_hospital_admissions'], label='june')
+                # doesn't always work depending on regions available in data...
+                try:
+                    ax[i].plot(admissions_df.loc['Admissions_' + label.replace('_', '-'), 'All regions'],
+                    label='data', color='k')
+                except:
+                    continue
+                ax[i].legend()
 
-        self.format_axes(ax)
-        plt.subplots_adjust(top=0.90)
-        pdf.savefig(fig, dpi=300, bbox_inches='tight')
+            self.format_axes(ax)
+            plt.subplots_adjust(top=0.90)
+            pdf.savefig(fig, dpi=300, bbox_inches='tight')
 
-        # daily deaths plot
-        fig, ax = plt.subplots(**fig_params)
-        plt.suptitle('Age stratified daily hospital deaths for England', fontsize=24)
-        for axes in ax.T[0]:
-            axes.set_ylabel('Daily \n hospital deaths')
-        if sitrep_bins:
-            fig.delaxes(ax[1, 2])
-        ax = ax.ravel()
-        for i, label in enumerate(labels):
-            ax[i].set_title(label)
-            ax[i].plot(df.loc[label]['daily_deaths_hospital'] + \
-                       df.loc[label]['daily_deaths_icu'], label='june')
-            # doesn't always work depending on regions available in data...
-            try:
-                ax[i].plot(deaths_df.loc[label.replace('_', '-'), 'All regions'],
-                label='data', color='k')
-            except:
-                continue
-            ax[i].legend()
-        
-        self.format_axes(ax)
-        plt.subplots_adjust(top=0.90)
-        pdf.savefig(fig, dpi=300, bbox_inches='tight')
+            # daily deaths plot
+            fig, ax = plt.subplots(**fig_params)
+            plt.suptitle(f'Age stratified daily hospital deaths for England (Run_{self.parameter_index:03})', fontsize=24)
+            for axes in ax.T[0]:
+                axes.set_ylabel('Daily \n hospital deaths')
+            ax = ax.ravel()
+            for i, label in enumerate(labels):
+                ax[i].set_title(label)
+                ax[i].plot(df.loc[label]['daily_deaths_hospital'] + \
+                        df.loc[label]['daily_deaths_icu'], label='june')
+                # doesn't always work depending on regions available in data...
+                try:
+                    ax[i].plot(deaths_df.loc[label.replace('_', '-'), 'All regions'],
+                    label='data', color='k')
+                except:
+                    continue
+                ax[i].legend()
+            
+            self.format_axes(ax)
+            plt.subplots_adjust(top=0.90)
+            pdf.savefig(fig, dpi=300, bbox_inches='tight')
 
-        # seroprevalence plot
-        fig, ax = plt.subplots(**fig_params)
-        plt.suptitle('Age stratified seroprevalence for England', fontsize=24)
-        for axes in ax.T[0]:
-            axes.set_ylabel('Percentage \n seroprevalence')
-        if sitrep_bins:
-            fig.delaxes(ax[1, 2])
-        ax = ax.ravel()
-        for i, label in enumerate(labels):
-            ax[i].set_title(label)
-            ax[i].plot(df.loc[label]['seroprevalence'])
-        
-        self.format_axes(ax)
-        for axes in ax:
-            axes.yaxis.set_major_formatter(mtick.PercentFormatter())
-        plt.subplots_adjust(top=0.90)
-        pdf.savefig(fig, dpi=300, bbox_inches='tight')
-        
-        pdf.close()
+            # seroprevalence plot
+            fig, ax = plt.subplots(**fig_params)
+            plt.suptitle(f'Age stratified seroprevalence for England (Run_{self.parameter_index:03})', fontsize=24)
+            for axes in ax.T[0]:
+                axes.set_ylabel('Percentage \n seroprevalence')
+            ax = ax.ravel()
+            for i, label in enumerate(labels):
+                ax[i].set_title(label)
+                ax[i].plot(df.loc[label]['seroprevalence'])
+            
+            self.format_axes(ax)
+            for axes in ax:
+                axes.yaxis.set_major_formatter(mtick.PercentFormatter())
+            plt.subplots_adjust(top=0.90)
+            pdf.savefig(fig, dpi=300, bbox_inches='tight')
+            pdf.close()
         return None
 
     def format_axes(self, ax):
