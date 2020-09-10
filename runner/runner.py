@@ -68,9 +68,7 @@ def parse_paths(paths_configuration, region, iteration):
     ret["results_path"].mkdir(exist_ok=True, parents=True)
 
     ret["summary_path"] = ret["summary_path"] / region / f"iteration_{iteration:02}"
-    ret["summary_path"].mkdir(exist_ok=True, parents=True)   
-
-     
+    ret["summary_path"].mkdir(exist_ok=True, parents=True)     
 
     return ret
 
@@ -114,7 +112,9 @@ class Runner:
         self.region_configuration = region_configuration
         self.parameter_configuration = parameter_configuration
         self.policy_configuration = policy_configuration
-        self.parameter_generator = ParameterGenerator(parameter_configuration)
+        self.parameter_generator = ParameterGenerator(
+            parameter_configuration, verbose=verbose
+        )
         self.summary_configuration = summary_configuration
         self.verbose = system_configuration["verbose"]
 
@@ -235,6 +235,10 @@ class Runner:
         )
         return infection_seed
 
+    def get_index_to_run(self, parameter_index):
+        index_to_run = self.parameter_generator.parameters_to_run[parameter_index]
+        return index_to_run
+
     def generate_simulator(self, parameter_index, verbose=None):
         if verbose is None:
             verbose=self.verbose
@@ -275,6 +279,7 @@ class Runner:
     def extract_summaries(self, parameter_index=None, logger_dir=None, summary_dir=None, verbose=False):
         
         if parameter_index is not None:
+            index_to_run = self.get_index_to_run(parameter_index)
             run_name = f"run_{parameter_index:03}"
 
         if logger_dir is None:
@@ -296,12 +301,12 @@ class Runner:
         verbose_print(f"{(t2-t1)/60.}",verbose=verbose)
 
         # contains info on super areas, probably the most complete run summary
-        run_summary_path = summary_dir / f"run_summary_{parameter_index:03}.csv"
-        daily_regional_path = summary_dir / f"daily_regional_summary_{parameter_index:03}.csv"
+        run_summary_path = summary_dir / f"run_summary_{index_to_run:03}.csv"
+        daily_regional_path = summary_dir / f"daily_regional_summary_{index_to_run:03}.csv"
         save_regional_summaries(logger, run_summary_path, daily_regional_path)
 
-        world_path = summary_dir / f"world_summary_{parameter_index:03}.csv"
-        daily_world_path = summary_dir / f"daily_world_summary_{parameter_index:03}.csv"
+        world_path = summary_dir / f"world_summary_{index_to_run:03}.csv"
+        daily_world_path = summary_dir / f"daily_world_summary_{index_to_run:03}.csv"
         save_world_summaries(logger,world_path, daily_world_path)
 
         if self.summary_configuration:
@@ -310,14 +315,14 @@ class Runner:
             age_bins = None
 
         age_path = summary_dir / f"age_summary_{parameter_index:03}.csv"
-        daily_age_path = summary_dir / f"daily_age_summary_{parameter_index:03}.csv"   
+        daily_age_path = summary_dir / f"daily_age_summary_{index_to_run:03}.csv"   
         save_age_summaries(logger,age_path,daily_age_path,age_bins=age_bins)
 
-        hospital_path = summary_dir / f"hospital_summary_{parameter_index:03}.csv"
+        hospital_path = summary_dir / f"hospital_summary_{index_to_run:03}.csv"
         save_hospital_summary(logger,hospital_path)
 
-        infection_locations_path = summary_dir / f"total_infection_locations_{parameter_index:03}.csv"
-        daily_loc_ts_path = summary_dir / f"daily_infection_loc_timeseries_{parameter_index:03}.csv"
+        infection_locations_path = summary_dir / f"total_infection_locations_{index_to_run:03}.csv"
+        daily_loc_ts_path = summary_dir / f"daily_infection_loc_timeseries_{index_to_run:03}.csv"
         save_infection_locations(logger, infection_locations_path,daily_loc_ts_path)
 
         # logger does these differently now
