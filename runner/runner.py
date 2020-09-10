@@ -22,7 +22,7 @@ from june.infection import InfectionSelector
 from june.hdf5_savers import generate_world_from_hdf5
 from june import paths
 from june.logger.read_logger import ReadLogger
-from .parameter_generator import ParameterGenerator, SimpleParameterGenerator
+from .parameter_generator import ParameterGenerator, FixedParameterGenerator
 from .extract_data_new import *
 from .plotter import Plotter
 
@@ -119,7 +119,10 @@ class Runner:
         else:
             self.default_values = default_values
         self.policy_configuration = policy_configuration
-        self.parameter_generator = SimpleParameterGenerator(parameter_configuration)
+        if 'fixed_parameters' in parameter_configuration.keys():
+            self.parameter_generator = FixedParameterGenerator(parameter_configuration)
+        else:
+            self.parameter_generator = ParameterGenerator(parameter_configuration)
         self.summary_configuration = summary_configuration
         self.verbose = system_configuration["verbose"]
 

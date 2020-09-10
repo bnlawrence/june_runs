@@ -19,7 +19,7 @@ def _read_parameters_to_run(parameters_to_run, num_runs):
     return parameters_to_run
 
 
-class SimpleParameterGenerator:
+class FixedParameterGenerator:
     def __init__(self, parameter_configuration: dict = None):
         self.num_samples = parameter_configuration["number_of_samples"]
         self.parameters_to_run = parameter_configuration['fixed_parameters']
