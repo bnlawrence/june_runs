@@ -18,6 +18,23 @@ def _read_parameters_to_run(parameters_to_run, num_runs):
             parameters_to_run = np.arange(low, high+1)
     return parameters_to_run
 
+
+class SimpleParameterGenerator:
+    def __init__(self, parameter_configuration: dict = None):
+        self.num_samples = parameter_configuration["number_of_samples"]
+        self.parameters_to_run = parameter_configuration['fixed_parameters']
+
+    def get_parameters_from_index(self, idx):
+        ret = {}
+        for parameter_name, parameter_values in self.parameters_to_run.items():
+            ret[parameter_name] = parameter_values[idx]
+        ret["run_number"] = int(idx)
+        return ret
+
+    def __getitem__(self, idx):
+        return self.get_parameters_from_index(idx)
+
+
 class ParameterGenerator:
     """
     Given a parameter configuration with parameter bounds, generates a 

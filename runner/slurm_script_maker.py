@@ -166,6 +166,7 @@ class SlurmScriptMaker:
                 f"module load gnu_comp/7.3.0",
                 f"module load hdf5",
                 f"module load openmpi/3.0.1",
+                f"source /cosma6/data/dp004/dc-cues1/june_env/bin/activate"
             ]
         else:
             raise ValueError(f"System {self.system} is not supported")

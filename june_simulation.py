@@ -265,7 +265,7 @@ print_memory_status(when='before sim')
 ###===========RUUUUUUUUUUUN!==========###
 
 t1 = time.time()
-simulator.run()
+#simulator.run()
 t2 = time.time()
 
 print(f'simulation iter:{iteration},idx:{index} took {(t2-t1)/60.} min')

@@ -22,7 +22,7 @@ from june.infection import InfectionSelector
 from june.hdf5_savers import generate_world_from_hdf5
 from june import paths
 from june.logger.read_logger import ReadLogger
-from .parameter_generator import ParameterGenerator
+from .parameter_generator import ParameterGenerator, SimpleParameterGenerator
 from .extract_data_new import *
 from .plotter import Plotter
 
@@ -113,8 +113,13 @@ class Runner:
         self.infection_configuration = infection_configuration
         self.region_configuration = region_configuration
         self.parameter_configuration = parameter_configuration
+        if 'path_to_default_values' in parameter_configuration.keys():
+            with open(parameter_configuration['path_to_default_values']) as json_file:
+                self.default_values = json.load(json_file)
+        else:
+            self.default_values = default_values
         self.policy_configuration = policy_configuration
-        self.parameter_generator = ParameterGenerator(parameter_configuration)
+        self.parameter_generator = SimpleParameterGenerator(parameter_configuration)
         self.summary_configuration = summary_configuration
         self.verbose = system_configuration["verbose"]
 
@@ -134,14 +139,14 @@ class Runner:
         world = generate_world_from_hdf5(self.paths_configuration["world_path"])
         return world
 
-    def generate_health_index_generator(self, parameters_dict, verbose=False):
+    def generate_health_index_generator(self, parameters_dict, default_values, verbose=False):
         if "asymptomatic_ratio" in parameters_dict:
             asymptomatic_ratio = parameters_dict["asymptomatic_ratio"]
         else:
             asymptomatic_ratio = default_values["asymptomatic_ratio"]
         return HealthIndexGenerator.from_file(asymptomatic_ratio=asymptomatic_ratio)
 
-    def generate_infection_selector(self, health_index_generator, verbose=False):
+    def generate_infection_selector(self, health_index_generator, default_values, verbose=False):
         if "infectivity_profile" in self.infection_configuration:
             infectivity_profile = self.infection_configuration["infectivity_profile"]
             verbose_print(f"set infectivity profile {infectivity_profile}", verbose=verbose)
@@ -155,13 +160,13 @@ class Runner:
         )
         return infection_selector
 
-    def generate_interaction(self, parameters_dict, verbose=False):
+    def generate_interaction(self, parameters_dict, default_values, verbose=False):
         interaction = Interaction.from_file()
         if "alpha_physical" in parameters_dict:
             alpha_physical = parameters_dict["alpha_physical"]
             verbose_print(f"set alpha_physical {alpha_physical:.3f}", verbose=verbose)
         else:
-            alpha_physical = default_values["alpha_physical"]
+            alpha_physical = 2.
             verbose_print(f"no alpha_physical; default {alpha_physical:.3f}",  verbose=verbose)
         interaction.alpha_physical = alpha_physical
         for beta in interaction.beta:
@@ -170,7 +175,7 @@ class Runner:
                 interaction.beta[beta] = parameters_dict[beta_parameter_name]
         return interaction
 
-    def generate_policies(self, parameters_dict,verbose=False):
+    def generate_policies(self, parameters_dict, default_values,verbose=False):
         policies = Policies.from_file()
         policies_to_modify = defaultdict(list)
         policy_types = set()
@@ -213,31 +218,38 @@ class Runner:
                     setattr(second_policy, parameter_name, parameter_value)
         return policies
 
-    def generate_infection_seed(self, parameters_dict, infection_selector, world, verbose=False):
+    def generate_infection_seed(self, parameters_dict, default_values, infection_selector, world, verbose=False):
         if "seed_strength" in parameters_dict:
             seed_strength = parameters_dict["seed_strength"]
             verbose_print(f"set seed strength {seed_strength:.3f}",verbose=verbose)
         else:
             seed_strength = default_values["seed_strength"]
             verbose_print(f"no seed strength; default {seed_strength:.3f}",verbose=verbose)
+        if "age_profile" in parameters_dict:
+            age_profile = parameters_dict['age_profile']
+            verbose_print(f"set age profile {age_profile}",verbose=verbose)
+        else:
+            age_profile = None
         oc = Observed2Cases.from_file(
             super_areas=world.super_areas,
             health_index=infection_selector.health_index_generator,
         )
         n_cases_df = oc.cases_from_deaths()
         # Seed over 2 days
-        n_cases_to_seed_df = n_cases_df.loc["2020-02-28":"2020-02-29"]
+        n_cases_to_seed_df = n_cases_df.loc["2020-03-01":"2020-03-02"]
         infection_seed = InfectionSeed.from_file(
             super_areas=world.super_areas,
             selector=infection_selector,
             n_cases_region=n_cases_to_seed_df,
             seed_strength=seed_strength,
+            age_profile=age_profile,
         )
         return infection_seed
 
     def generate_simulator(self, parameter_index, verbose=None):
         if verbose is None:
             verbose=self.verbose
+        #TODO: modify this
         parameters_dict = self.parameter_generator[parameter_index]
         run_number = parameters_dict["run_number"]
         verbose_print(f"Run number {run_number} params:",parameters_dict, verbose=verbose) #
@@ -246,15 +258,24 @@ class Runner:
         save_path.mkdir(exist_ok=True, parents=True)
         with open(save_path / "parameters.json", "w") as f:
             json.dump(parameters_dict, f)
-        health_index_generator = self.generate_health_index_generator(parameters_dict)
-        infection_selector = self.generate_infection_selector(health_index_generator)
-        interaction = self.generate_interaction(parameters_dict)
-        policies = self.generate_policies(parameters_dict)
+        with open(save_path / "default_parameters.json", "w") as f:
+            json.dump(self.default_values,f)
+        health_index_generator = self.generate_health_index_generator(parameters_dict, 
+                default_values=self.default_values)
+        infection_selector = self.generate_infection_selector(health_index_generator, 
+                default_values=self.default_values)
+        interaction = self.generate_interaction(parameters_dict,
+                default_values=self.default_values)
+        policies = self.generate_policies(parameters_dict,
+                default_values=self.default_values)
         verbose_print(memory_status(when='before world'), verbose=verbose) #
         world = self.generate_world()
         verbose_print(memory_status(when='after world'), verbose=verbose) #
         infection_seed = self.generate_infection_seed(
-            parameters_dict, infection_selector, world
+            parameters_dict=parameters_dict, 
+            infection_selector=infection_selector, 
+            world=world, 
+            default_values=self.default_values
         )
         leisure = generate_leisure_for_config(
             world, self.paths_configuration["config_path"]

@@ -14,6 +14,7 @@ args = parser.parse_args()
 parameter_index = args.index
 setup = bool(args.setup)
 config_path = args.run_configuration
+print('Config path = ', config_path)
 
 if setup:
     slurm_script_maker = SlurmScriptMaker.from_file(config_path)

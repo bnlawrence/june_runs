@@ -1,0 +1,51 @@
+system_configuration:
+  name: cosma #available : [cosma, jasmin]
+  queue: cosma6
+  account: dp004 
+  jobs_per_node: 4
+  parallel_tasks_path: "default"
+  runner_path: "default"
+  email_notifications: no
+  email_address: null # your email here
+  verbose: yes
+  max_time: "72:00:00"
+  
+region: "southwest"
+iteration: 1
+
+paths_configuration: # use @ as placeholder
+#base_path: "/cosma6/data/dp004/dc-quer1/june_runs"
+  base_path: "/cosma6/data/dp004/dc-cues1/june_runs"
+  world_path: "/cosma6/data/dp004/dc-quer1/june_worlds/up_to_date/southwest.hdf5"
+  results_path: "@base_path/results_school_opening"
+  summary_path: "@results_path/summaries" # note the different "base"!
+  stdout_path: "@base_path/school_opening_stdout/"
+  config_path: "@base_path/config.yaml"
+
+infection_configuration:
+  infectivity_profile: "XNExp" # available: ["XNExp", "nature", "correction_nature"]
+
+policy_configuration:
+  lockdown_ratio: 0.5
+
+parameter_configuration:
+  iteration: 1
+  number_of_samples: 3 
+  parameters_to_run: 'all'
+  path_to_default_values: '/cosma5/data/durham/dc-sedg2/parameters.json'
+  fixed_parameters:
+    social_distancing_beta_factor: [0.55,0.7,0.85]
+
+summary_configuration:
+  'age_bins' : [ 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50,51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84,85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99]
+
+
+
+
+
+
+
+
+
+
+
