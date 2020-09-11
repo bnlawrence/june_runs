@@ -1,0 +1,58 @@
+system_configuration:
+  name: cosma #available : [cosma, jasmin]
+  queue: cosma
+  account: durham
+  jobs_per_node: 4
+  parallel_tasks_path: "default"
+  runner_path: "default"
+  email_notifications: no
+  email_address: null # your email here
+  verbose: yes
+  max_time: "72:00:00"
+  
+region: "london"
+iteration: 1
+
+paths_configuration: # use @ as placeholder
+#base_path: "/cosma6/data/dp004/dc-quer1/june_runs"
+  base_path: "/cosma7/data/durham/dc-sedg2/june_runs" # your base 
+  world_path: "@base_path/june_worlds/up_to_date/london.hdf5"
+  results_path: "@base_path/results_long_runs/r000"
+  summary_path: "@results_path/summaries" # note the different "base"!
+  stdout_path: "default"
+  config_path: "@base_path/config.yaml"
+
+infection_configuration:
+  infectivity_profile: "XNExp" # available: ["XNExp", "nature", "correction_nature"]
+
+policy_configuration:
+  lockdown_ratio: 0.5
+
+parameter_configuration:
+  iteration: 1
+  # number_of_samples: 250 # irrelevant here, as running a grid.
+
+  config_type: "grid"
+  parameters_to_vary:
+    policies:
+      social_distancing:
+        beta_factor: [0.595, 0.700, 0.804]
+      susceptibility:
+        susceptibility: [0.5, 1.0]
+
+  fixed_parameters: "./run_configs/example_parameters.json"
+  # can also provide fixed parameters as dict like policy_configuration
+
+summary_configuration:
+  'age_bins' : [0, 6, 18, 65, 85, 100]
+
+
+
+
+
+
+
+
+
+
+

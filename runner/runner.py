@@ -170,7 +170,7 @@ class Runner:
                 interaction.beta[beta] = parameters_dict[beta_parameter_name]
         return interaction
 
-    def generate_policies(self, parameters_dict,verbose=False):
+    def generate_policies(self, parameters_dict, verbose=False):
         policies = Policies.from_file()
         policies_to_modify = defaultdict(list)
         policy_types = set()
@@ -211,6 +211,11 @@ class Runner:
                         first_policy, parameter_name, lockdown_ratio * parameter_value
                     )
                     setattr(second_policy, parameter_name, parameter_value)
+                elif policy_name == "susceptibility":
+                    setattr(policies_mod[0], max_age, 12)
+                    setattr(policies_mod[0], parameter_name, parameter_value)
+                    print(policies_mod[0])
+                    
         return policies
 
     def generate_infection_seed(self, parameters_dict, infection_selector, world, verbose=False):

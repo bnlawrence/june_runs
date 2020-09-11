@@ -128,6 +128,3 @@ class ParameterGenerator:
     def __iter__(self):
         return iter([self[idx] for idx in self.parameters_to_run])
 
-class GridParameters:
-    def 
-
