@@ -8,6 +8,7 @@ from SALib.util import scale_samples
 from pathlib import Path
 from collections import OrderedDict, defaultdict
 from sklearn.model_selection import ParameterGrid
+import itertools
 
 default_config_file = Path(__file__).parent.parent / "run_configs/config_example.yaml"
 
@@ -16,6 +17,8 @@ def verbose_print(*args,verbose=False):
         print(*args)
 
 def _read_parameters_to_run(parameters_to_run, num_runs):
+    if parameters_to_run is None:
+        parameters_to_run = "all"
     if type(parameters_to_run) == str:
         if parameters_to_run == "all":
             parameters_to_run = np.arange(0, num_runs)
@@ -25,18 +28,21 @@ def _read_parameters_to_run(parameters_to_run, num_runs):
     return parameters_to_run
 
 def _get_len_parameter_grid(parameter_configuration):
-    pgrid = list(
-        ParameterGenerator._read_parameter_configuration(
+    len_grid = len(
+        ParameterGenerator._do_grid(
             parameter_configuration["parameters_to_vary"]
         )
     )
-    return(len(parameter_grid))
+    return len_grid
+
 
 class ParameterGenerator:
     """
     Given a parameter configuration with parameter bounds, generates a 
     latin hypercube sampler that returns random parameter variations.
     """
+
+    config_types = ["latin_hypercube", "grid"]
 
     def __init__(self, parameter_configuration: dict = None, verbose=False):
         self.parameter_dict = self._read_parameter_configuration(
@@ -52,16 +58,28 @@ class ParameterGenerator:
                     self.fixed_parameters = json.load(json_file)
         else:
             self.fixed_parameters = dict()
-                
-        self.num_samples = parameter_configuration["number_of_samples"]
+
+        if parameter_configuration.get("config_type") in [None, "default"]:
+            self.config_type = "latin_hypercube"
+        elif parameter_configuration.get("config_type") in self.config_types: 
+            self.config_type = parameter_configuration["config_type"]
+        else:
+            print("Available config_types:", config_types)
+        verbose_print(f"set config type to {self.config_type}", verbose=True)
+        
+        if self.config_type == "latin_hypercube":
+            # Get num samples first -- as LatHyp depends on num_samples.
+            self.num_samples = parameter_configuration["number_of_samples"]
+            self.parameter_array = self._generate_lhs_array()
+        elif self.config_type == "grid":
+            # Get num samples last -- n_samples determined by the grid permutations.
+            self.parameter_array = self._generate_grid_array()
+            self.num_samples = len(self.parameter_array)      
+
         self.parameters_to_run = _read_parameters_to_run(
-            parameter_configuration["parameters_to_run"], 
+            parameter_configuration.get("parameters_to_run"), 
             self.num_samples
         )       
-        if parameter_configuration["config_type"] in ["latin_hypercube", "lhs", "default"]:
-            self.parameter_array = self._generate_lhs_array()
-        elif parameter_configuration["config_type"] == "grid":
-            self.parameter_array = self._generate_grid_array()
         # self.lhs_array = self._generate_lhs_array_from_config()
 
     @classmethod
@@ -100,10 +118,16 @@ class ParameterGenerator:
         scale_samples(lhs_array, bounds)
         return lhs_array
 
-    def _generate_grid_array(self):
-        grid_points = list(self.parmeter_dict.values())
-        num_vars = len(grid_points)
-        return list(ParameterGrid(self.parameter_dict))
+    @staticmethod
+    def _do_grid(parameters_dict):
+        keys, values = zip(*parameters_dict.items())
+        permutations_dicts = [
+            dict(zip(keys, v)) for v in itertools.product(*values)
+        ]
+        return permutations_dicts
+
+    def _generate_grid_array(self, ):  
+        return self._do_grid(self.parameter_dict)
 
     def get_parameters_from_index(self, idx):
         """Generates a parameter dictionary from latin hypercube array.
@@ -116,9 +140,10 @@ class ParameterGenerator:
         for i, (parameter_name,fixed_val) in enumerate(self.fixed_parameters.items()):
             ret[parameter_name] = fixed_val
         for i, parameter_name in enumerate(self.parameter_dict.keys()):
-            if parameter_name in ret:
-                print(f"overwrite fixed {parameter_name} with {parameter_values[i]}")
-            ret[parameter_name] = parameter_values[i]
+            if self.config_type == "latin_hypercube":
+                ret[parameter_name] = parameter_values[i]
+            elif self.config_type == "grid":
+                ret[parameter_name] = parameter_values[parameter_name]
         ret["run_number"] = int(index_to_run)
         return ret
 

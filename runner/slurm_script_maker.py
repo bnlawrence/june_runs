@@ -35,7 +35,7 @@ class SlurmScriptMaker:
         parameters_to_run="all",
         output_path="june_results",
         stdout_path=None,
-        jobname=None
+        jobname=None,
         parallel_tasks_path=default_parallel_tasks_path,
         runner_path=default_run_simulation_script,
     ):
@@ -95,7 +95,9 @@ class SlurmScriptMaker:
         region = config["region"]
         iteration = config["iteration"]
         if config["parameter_configuration"].get("config_type") == "grid":
-            num_runs = _get_len_parameter_grid("parameters_to_vary")
+            num_runs = _get_len_parameter_grid(
+                config["parameter_configuration"]
+            )
         else:
             num_runs = config["parameter_configuration"].get("number_of_samples")
         if config["parameter_configuration"].get("parameters_to_run") is None: 
@@ -137,9 +139,10 @@ class SlurmScriptMaker:
             print("CHECK:\n     Have you set the world_path or region in config correctly?")
         if paths["world_path"].exists() is False:
             print("CHECK:\n     world_path does not exist.")
-        if config["parameter_config"].get("config_type") == "grid":
+        if config["parameter_configuration"].get("config_type") == "grid":
+            print(config["parameter_configuration"]["parameters_to_vary"])
             grid_len = _get_len_parameter_grid(
-                config["parameter_config"]["parameters_to_vary"]
+                config["parameter_configuration"]
             )
             print(f"Running with GRID parameters, grid length {grid_len}")
             if config["parameter_configuration"].get(
@@ -213,7 +216,7 @@ class SlurmScriptMaker:
                 "#!/bin/bash -l",
                 "",
                 f"#SBATCH --ntasks {self.max_cpus_per_node}",
-                f"#SBATCH -J {self.job_name}_{self.iteration}_{script_number:03d}",
+                f"#SBATCH -J {self.jobname}_{self.iteration}_{script_number:03d}",
                 f"#SBATCH -o {stdout_name}.out",
                 f"#SBATCH -e {stdout_name}.err",
                 f"#SBATCH -p {self.queue}",

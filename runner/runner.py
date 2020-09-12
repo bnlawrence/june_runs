@@ -225,6 +225,11 @@ class Runner:
         else:
             seed_strength = default_values["seed_strength"]
             verbose_print(f"no seed strength; default {seed_strength:.3f}",verbose=verbose)
+        if "age_profile" in parameters_dict:
+            age_profile = parameters_dict["age_profile"]
+            print(f"doing something with age_profile", age_profile)
+        else:
+            verbose_print(f"no age_profile",verbose=verbose)
         oc = Observed2Cases.from_file(
             super_areas=world.super_areas,
             health_index=infection_selector.health_index_generator,
@@ -258,6 +263,7 @@ class Runner:
         health_index_generator = self.generate_health_index_generator(parameters_dict)
         infection_selector = self.generate_infection_selector(health_index_generator)
         interaction = self.generate_interaction(parameters_dict)
+        print(interaction.__dict__)
         policies = self.generate_policies(parameters_dict)
         verbose_print(memory_status(when='before world'), verbose=verbose) #
         world = self.generate_world()
