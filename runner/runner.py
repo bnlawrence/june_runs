@@ -68,9 +68,7 @@ def parse_paths(paths_configuration, region, iteration):
     ret["results_path"].mkdir(exist_ok=True, parents=True)
 
     ret["summary_path"] = ret["summary_path"] / region / f"iteration_{iteration:02}"
-    ret["summary_path"].mkdir(exist_ok=True, parents=True)   
-
-     
+    ret["summary_path"].mkdir(exist_ok=True, parents=True)     
 
     return ret
 
@@ -114,7 +112,9 @@ class Runner:
         self.region_configuration = region_configuration
         self.parameter_configuration = parameter_configuration
         self.policy_configuration = policy_configuration
-        self.parameter_generator = ParameterGenerator(parameter_configuration)
+        self.parameter_generator = ParameterGenerator(
+            parameter_configuration, verbose=verbose
+        )
         self.summary_configuration = summary_configuration
         self.verbose = system_configuration["verbose"]
 
@@ -170,7 +170,7 @@ class Runner:
                 interaction.beta[beta] = parameters_dict[beta_parameter_name]
         return interaction
 
-    def generate_policies(self, parameters_dict,verbose=False):
+    def generate_policies(self, parameters_dict, verbose=False):
         policies = Policies.from_file()
         policies_to_modify = defaultdict(list)
         policy_types = set()
@@ -211,6 +211,11 @@ class Runner:
                         first_policy, parameter_name, lockdown_ratio * parameter_value
                     )
                     setattr(second_policy, parameter_name, parameter_value)
+                elif policy_name == "susceptibility":
+                    setattr(policies_mod[0], max_age, 12)
+                    setattr(policies_mod[0], parameter_name, parameter_value)
+                    print(policies_mod[0])
+                    
         return policies
 
     def generate_infection_seed(self, parameters_dict, infection_selector, world, verbose=False):
@@ -220,6 +225,11 @@ class Runner:
         else:
             seed_strength = default_values["seed_strength"]
             verbose_print(f"no seed strength; default {seed_strength:.3f}",verbose=verbose)
+        if "age_profile" in parameters_dict:
+            age_profile = parameters_dict["age_profile"]
+            print(f"doing something with age_profile", age_profile)
+        else:
+            verbose_print(f"no age_profile",verbose=verbose)
         oc = Observed2Cases.from_file(
             super_areas=world.super_areas,
             health_index=infection_selector.health_index_generator,
@@ -235,6 +245,10 @@ class Runner:
         )
         return infection_seed
 
+    def get_index_to_run(self, parameter_index):
+        index_to_run = self.parameter_generator.parameters_to_run[parameter_index]
+        return index_to_run
+
     def generate_simulator(self, parameter_index, verbose=None):
         if verbose is None:
             verbose=self.verbose
@@ -249,6 +263,7 @@ class Runner:
         health_index_generator = self.generate_health_index_generator(parameters_dict)
         infection_selector = self.generate_infection_selector(health_index_generator)
         interaction = self.generate_interaction(parameters_dict)
+        print(interaction.__dict__)
         policies = self.generate_policies(parameters_dict)
         verbose_print(memory_status(when='before world'), verbose=verbose) #
         world = self.generate_world()
@@ -275,6 +290,7 @@ class Runner:
     def extract_summaries(self, parameter_index=None, logger_dir=None, summary_dir=None, verbose=False):
         
         if parameter_index is not None:
+            index_to_run = self.get_index_to_run(parameter_index)
             run_name = f"run_{parameter_index:03}"
 
         if logger_dir is None:
@@ -296,12 +312,12 @@ class Runner:
         verbose_print(f"{(t2-t1)/60.}",verbose=verbose)
 
         # contains info on super areas, probably the most complete run summary
-        run_summary_path = summary_dir / f"run_summary_{parameter_index:03}.csv"
-        daily_regional_path = summary_dir / f"daily_regional_summary_{parameter_index:03}.csv"
+        run_summary_path = summary_dir / f"run_summary_{index_to_run:03}.csv"
+        daily_regional_path = summary_dir / f"daily_regional_summary_{index_to_run:03}.csv"
         save_regional_summaries(logger, run_summary_path, daily_regional_path)
 
-        world_path = summary_dir / f"world_summary_{parameter_index:03}.csv"
-        daily_world_path = summary_dir / f"daily_world_summary_{parameter_index:03}.csv"
+        world_path = summary_dir / f"world_summary_{index_to_run:03}.csv"
+        daily_world_path = summary_dir / f"daily_world_summary_{index_to_run:03}.csv"
         save_world_summaries(logger,world_path, daily_world_path)
 
         if self.summary_configuration:
@@ -310,14 +326,14 @@ class Runner:
             age_bins = None
 
         age_path = summary_dir / f"age_summary_{parameter_index:03}.csv"
-        daily_age_path = summary_dir / f"daily_age_summary_{parameter_index:03}.csv"   
+        daily_age_path = summary_dir / f"daily_age_summary_{index_to_run:03}.csv"   
         save_age_summaries(logger,age_path,daily_age_path,age_bins=age_bins)
 
-        hospital_path = summary_dir / f"hospital_summary_{parameter_index:03}.csv"
+        hospital_path = summary_dir / f"hospital_summary_{index_to_run:03}.csv"
         save_hospital_summary(logger,hospital_path)
 
-        infection_locations_path = summary_dir / f"total_infection_locations_{parameter_index:03}.csv"
-        daily_loc_ts_path = summary_dir / f"daily_infection_loc_timeseries_{parameter_index:03}.csv"
+        infection_locations_path = summary_dir / f"total_infection_locations_{index_to_run:03}.csv"
+        daily_loc_ts_path = summary_dir / f"daily_infection_loc_timeseries_{index_to_run:03}.csv"
         save_infection_locations(logger, infection_locations_path,daily_loc_ts_path)
 
         # logger does these differently now

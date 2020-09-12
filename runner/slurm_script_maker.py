@@ -3,8 +3,10 @@ import numpy as np
 import yaml
 import subprocess
 
+from sklearn.model_selection import ParameterGrid
+
 from .runner import parse_paths
-from .parameter_generator import _read_parameters_to_run
+from .parameter_generator import _read_parameters_to_run, _get_len_parameter_grid
 import june
 
 queue_to_max_cpus = {"cosma": 16, "cosma6": 16, "cosma7": 28, "jasmin": 20, "cosma-prince" : 16}
@@ -28,10 +30,12 @@ class SlurmScriptMaker:
         max_time="72:00:00",
         region="london",
         iteration=1,
+        config_type="latin_hypercube",
         num_runs=250,
         parameters_to_run="all",
         output_path="june_results",
         stdout_path=None,
+        jobname=None,
         parallel_tasks_path=default_parallel_tasks_path,
         runner_path=default_run_simulation_script,
     ):
@@ -45,7 +49,8 @@ class SlurmScriptMaker:
         self.iteration = iteration
         self.max_time = max_time
         self.num_runs = num_runs
-        self.parameters_to_run = _read_parameters_to_run(parameters_to_run, num_runs)
+        if num_runs is not None:
+            self.parameters_to_run = _read_parameters_to_run(parameters_to_run, num_runs)
         self.max_cpus_per_node = queue_to_max_cpus[queue]
         self.parallel_tasks_path = Path(parallel_tasks_path)
         self.runner_path = Path(runner_path)
@@ -55,6 +60,10 @@ class SlurmScriptMaker:
             self.stdout_dir = self.output_path / "stdout"
         else:
             self.stdout_dir = stdout_path
+        if jobname is None or jobname == "default":
+            self.jobname = self.region
+        else:
+            self.jobname = jobname
         self.stdout_dir.mkdir(parents=True, exist_ok=True)
 
     @classmethod
@@ -78,11 +87,23 @@ class SlurmScriptMaker:
             run_script = default_run_simulation_script
         else:
             run_script = system_configuration["runner_path"]
+        if "jobname" in system_configuration:
+            jobname = system_configuration["jobname"]            
+        else:
+            jobname = None
         jobs_per_node = system_configuration["jobs_per_node"]
         region = config["region"]
         iteration = config["iteration"]
-        num_samples = config["parameter_configuration"]["number_of_samples"]
-        parameters_to_run = config["parameter_configuration"]["parameters_to_run"]
+        if config["parameter_configuration"].get("config_type") == "grid":
+            num_runs = _get_len_parameter_grid(
+                config["parameter_configuration"]
+            )
+        else:
+            num_runs = config["parameter_configuration"].get("number_of_samples")
+        if config["parameter_configuration"].get("parameters_to_run") is None: 
+            parameters_to_run = "all"
+        else:
+            parameters_to_run = config["parameter_configuration"]["parameters_to_run"]
         paths = parse_paths(
             config["paths_configuration"], region=region, iteration=iteration
         )
@@ -99,10 +120,11 @@ class SlurmScriptMaker:
             runner_path=run_script,
             region=region,
             iteration=iteration,
-            num_runs=num_samples,
+            num_runs=num_runs,
             parameters_to_run=parameters_to_run,
             output_path=paths["results_path"],
-            stdout_path=paths["stdout_path"]
+            stdout_path=paths["stdout_path"],
+            jobname = jobname
         )
     
     @staticmethod
@@ -117,6 +139,16 @@ class SlurmScriptMaker:
             print("CHECK:\n     Have you set the world_path or region in config correctly?")
         if paths["world_path"].exists() is False:
             print("CHECK:\n     world_path does not exist.")
+        if config["parameter_configuration"].get("config_type") == "grid":
+            print(config["parameter_configuration"]["parameters_to_vary"])
+            grid_len = _get_len_parameter_grid(
+                config["parameter_configuration"]
+            )
+            print(f"Running with GRID parameters, grid length {grid_len}")
+            if config["parameter_configuration"].get(
+                "parameters_to_run"
+            ) not in [None, "all"]:
+                print("CHECK:\n    are you sure you don't want \"all\" parameters_to_run?")
         return None
 
     @staticmethod
@@ -184,7 +216,7 @@ class SlurmScriptMaker:
                 "#!/bin/bash -l",
                 "",
                 f"#SBATCH --ntasks {self.max_cpus_per_node}",
-                f"#SBATCH -J {self.region}_{self.iteration}_{script_number:03d}",
+                f"#SBATCH -J {self.jobname}_{self.iteration}_{script_number:03d}",
                 f"#SBATCH -o {stdout_name}.out",
                 f"#SBATCH -e {stdout_name}.err",
                 f"#SBATCH -p {self.queue}",

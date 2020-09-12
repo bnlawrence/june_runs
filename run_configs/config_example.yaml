@@ -31,6 +31,9 @@ policy_configuration:
 parameter_configuration:
   iteration: 1
   number_of_samples: 250
+  parameters_to_run: "all"
+
+  config_type: "latin_hypercube" # irrelevant, latin_hypercubeby default
   parameters_to_vary:
     betas:
       'pub'       : [0.01, 0.25]
@@ -52,6 +55,8 @@ parameter_configuration:
           beta_factor: [0.3,0.9]
       quarantine:
           household_compliance: [0.2,0.8]
+  # fixed_parameters: None
+
 
 summary_configuration:
   'age_bins' : [0, 6, 18, 65, 85, 100]
