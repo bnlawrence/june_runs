@@ -125,7 +125,7 @@ class Runner:
         return cls(**config)
 
     @staticmethod
-    def _set_beta_factors(self, social_distancing_policy, beta_factor):
+    def _set_beta_factors(social_distancing_policy, beta_factor):
         for key in social_distancing_policy.beta_factors:
             if key != "household":
                 social_distancing_policy.beta_factors[key] = beta_factor
@@ -185,36 +185,52 @@ class Runner:
             for parameter_name in parameters_dict:
                 if policy_name in parameter_name:
                     policies_to_modify[policy_name].append(policy)
+            if policy_name == "quarantine":
+                print(policy.__dict__)
+
+        print(policies_to_modify)
+
         for policy_name, policies_mod in policies_to_modify.items():
+
+            #!!!!===============================================================!!!!#
+            #fix added [1:]
+            #!!!!===============================================================!!!!#
             parameters = [
-                (parameter.split(policy_name)[-1], value)
+                (parameter.split(policy_name)[-1][1:], value)
                 for parameter, value in parameters_dict.items()
                 if policy_name in parameter
             ]
+
             for parameter_name, parameter_value in parameters:
                 # for now we assume we have two lockdown policies.
-                # TODO: make it general
+                # TODO: make it general               
                 if (
-                    policy_name == "social_distancing"
+                    policy_name == "social_distancing" 
                     and parameter_name == "beta_factor"
                 ):
                     first_policy = policies_mod[0]
                     second_policy = policies_mod[1]
                     self._set_beta_factors(
-                        (parameter_value - 1) * lockdown_ratio + 1, first_policy
+                        first_policy, (parameter_value - 1) * lockdown_ratio + 1 
                     )
-                    self._set_beta_factors(parameter_value, second_policy)
+                    self._set_beta_factors(second_policy, parameter_value)
+
+                    print('\n\n',first_policy.__dict__)
+                    print('\n\n',second_policy.__dict__)
+                    print('\n\n UNMODIFIED',policies_mod[2].__dict__)
+                ### THIS NEEDS FIXING, ASAP!!!
                 elif "compliance" in parameter_name:
+                    print("this is a complinance")
                     first_policy = policies_mod[0]
                     second_policy = policies_mod[1]
                     setattr(
                         first_policy, parameter_name, lockdown_ratio * parameter_value
                     )
                     setattr(second_policy, parameter_name, parameter_value)
-                elif policy_name == "susceptibility":
-                    setattr(policies_mod[0], max_age, 12)
-                    setattr(policies_mod[0], parameter_name, parameter_value)
-                    print(policies_mod[0])
+                    print('\n\n',first_policy.__dict__)
+                    print('\n\n',second_policy.__dict__)
+
+        
                     
         return policies
 
@@ -250,6 +266,15 @@ class Runner:
         return index_to_run
 
     def generate_simulator(self, parameter_index, verbose=None):
+        print('Running with config: \n')       
+        print("sys config",self.system_configuration)
+        print("path config",self.paths_configuration)
+        print("inf config",self.infection_configuration)
+        print("region config",self.region_configuration)
+        print("param config",self.parameter_configuration)
+        print("pol config",self.policy_configuration)
+        print("summ config",self.summary_configuration)
+            
         if verbose is None:
             verbose=self.verbose
         parameters_dict = self.parameter_generator[parameter_index]
@@ -263,7 +288,7 @@ class Runner:
         health_index_generator = self.generate_health_index_generator(parameters_dict)
         infection_selector = self.generate_infection_selector(health_index_generator)
         interaction = self.generate_interaction(parameters_dict)
-        print(interaction.__dict__)
+        print('\n\ninteraction:\n',interaction.__dict__,'\n\n')
         policies = self.generate_policies(parameters_dict)
         verbose_print(memory_status(when='before world'), verbose=verbose) #
         world = self.generate_world()
