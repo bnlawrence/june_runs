@@ -23,6 +23,8 @@ class ParameterGenerator:
         self, parameter_list: List[dict], parameters_to_run: List[int] = "all"
     ):
         self.parameter_list = parameter_list
+        for i, parameters in enumerate(self.parameter_list):
+            parameters['run_number'] = i
         self.parameters_to_run = self._read_parameters_to_run(parameters_to_run)
 
     @classmethod
