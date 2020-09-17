@@ -4,6 +4,8 @@ import shutil
 import os
 import subprocess
 
+from pathlib import Path
+
 import june
 
 def parse_paths(paths_configuration, region, iteration):
@@ -42,6 +44,7 @@ def parse_paths(paths_configuration, region, iteration):
     ret["data_path"] = ret["results_path"] / "data"
     ret["data_path"].mkdir(exist_ok=True, parents=True)
 
+    return ret
     
 
 def verbose_print(*args,verbose=False):

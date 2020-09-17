@@ -6,7 +6,7 @@ import subprocess
 from sklearn.model_selection import ParameterGrid
 
 from .parameter_generator import _read_parameters_to_run, _get_len_parameter_grid
-from .utils import parse_paths, config_checks, git_checks 
+from .utils import parse_paths, config_checks, git_checks, copy_data
 import june
 
 queue_to_max_cpus = {"cosma": 16, "cosma6": 16, "cosma7": 28, "jasmin": 20, "cosma-prince" : 16}
