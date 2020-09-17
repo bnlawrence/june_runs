@@ -31,32 +31,33 @@ class ParameterGenerator:
                 {key: float(value) for key, value in row.items()}
                 for row in csv.DictReader(f)
             ]
-        return cls(
-            parameter_list=parameter_list, parameters_to_run=parameters_to_run
-        )
+        return cls(parameter_list=parameter_list, parameters_to_run=parameters_to_run)
 
-    @classmethod 
-    def from_grid(cls, parameter_dict: List[dict], parameters_to_run='all'):
+    @classmethod
+    def from_grid(cls, parameter_dict: List[dict], parameters_to_run="all"):
         keys, values = zip(*parameter_dict.items())
-        permutations_dicts = [
-            dict(zip(keys, v)) for v in itertools.product(*values)
-        ]
+        permutations_dicts = [dict(zip(keys, v)) for v in itertools.product(*values)]
         return cls(
-                parameter_list=permutations_dicts, parameters_to_run=parameters_to_run
-        )
-
-    @classmethod 
-    def from_regular_grid(cls, parameter_dict: List[dict], parameters_to_run='all'):
-        for key, value in parameter_dict.items():
-            parameter_dict[key] = np.linspace(start=value[0], stop=value[1], num=value[2])
-        return cls.from_grid(
-                parameter_dict=parameter_dict, parameters_to_run=parameters_to_run
+            parameter_list=permutations_dicts, parameters_to_run=parameters_to_run
         )
 
     @classmethod
-    def from_latin_hypercube(cls, parameter_bounds, n_samples, parameters_to_run='all'):
-        return  cls(
-            parameter_list = cls._generate_lhs(cls, parameter_bounds=parameter_bounds, n_samples=n_samples), parameters_to_run=parameters_to_run
+    def from_regular_grid(cls, parameter_dict: List[dict], parameters_to_run="all"):
+        for key, value in parameter_dict.items():
+            parameter_dict[key] = np.linspace(
+                start=value[0], stop=value[1], num=value[2]
+            )
+        return cls.from_grid(
+            parameter_dict=parameter_dict, parameters_to_run=parameters_to_run
+        )
+
+    @classmethod
+    def from_latin_hypercube(cls, parameter_bounds, n_samples, parameters_to_run="all"):
+        return cls(
+            parameter_list=cls._generate_lhs(
+                cls, parameter_bounds=parameter_bounds, n_samples=n_samples
+            ),
+            parameters_to_run=parameters_to_run,
         )
 
     def _generate_lhs(self, parameter_bounds, n_samples, seed=1):
@@ -72,10 +73,15 @@ class ParameterGenerator:
         scale_samples(lhs_array, bounds)
         parameter_dicts = []
         for i in range(len(lhs_array)):
-            parameter_dicts.append({key: value for key, value in zip(parameter_bounds.keys(), lhs_array[i])})
-        return parameter_dicts 
+            parameter_dicts.append(
+                {
+                    key: value
+                    for key, value in zip(parameter_bounds.keys(), lhs_array[i])
+                }
+            )
+        return parameter_dicts
 
-    @staticmethod # need to fix "_get_len_parameter_grid()" if remove @staticmethod
+    @staticmethod  # need to fix "_get_len_parameter_grid()" if remove @staticmethod
     def _read_parameter_configuration(parameter_configuration):
         parameter_dict = OrderedDict()
         for parameter_type, parameter_values in parameter_configuration.items():
@@ -112,5 +118,3 @@ class ParameterGenerator:
 
     def __iter__(self):
         return iter([self[idx] for idx in self.parameter_list])
-
-
