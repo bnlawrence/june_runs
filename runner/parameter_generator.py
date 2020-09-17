@@ -5,6 +5,7 @@ import sys
 import yaml
 import json
 
+import pandas as pd
 from pyDOE2 import lhs
 from SALib.util import scale_samples
 from pathlib import Path
@@ -26,11 +27,7 @@ class ParameterGenerator:
 
     @classmethod
     def from_file(cls, path_to_parameters: str, parameters_to_run="all"):
-        with open(path_to_parameters) as f:
-            parameter_list = [
-                {key: float(value) for key, value in row.items()}
-                for row in csv.DictReader(f)
-            ]
+        parameter_list = pd.read_csv(path_to_parameters, sep=' ').to_dict('records')
         return cls(parameter_list=parameter_list, parameters_to_run=parameters_to_run)
 
     @classmethod
@@ -80,23 +77,6 @@ class ParameterGenerator:
                 }
             )
         return parameter_dicts
-
-    @staticmethod  # need to fix "_get_len_parameter_grid()" if remove @staticmethod
-    def _read_parameter_configuration(parameter_configuration):
-        parameter_dict = OrderedDict()
-        for parameter_type, parameter_values in parameter_configuration.items():
-            if parameter_type == "betas":
-                for beta_name, beta_range in parameter_values.items():
-                    parameter_dict["beta_" + beta_name] = beta_range
-            elif parameter_type == "policies":
-                for policy_name, policy_parameters in parameter_values.items():
-                    for parameter_name, parameter_value in policy_parameters.items():
-                        parameter_dict[
-                            policy_name + "_" + parameter_name
-                        ] = parameter_value
-            else:
-                parameter_dict[parameter_type] = parameter_values
-        return parameter_dict
 
     def _read_parameters_to_run(self, parameters_to_run):
         if parameters_to_run is None:

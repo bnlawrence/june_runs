@@ -15,8 +15,8 @@ iteration: 1
 
 paths_configuration: # use @ as placeholder
 #base_path: "/cosma6/data/dp004/dc-quer1/june_runs"
-  base_path: "/cosma7/data/durham/dc-sedg2/june_runs" # your base 
-  world_path: "@base_path/june_worlds/up_to_date/london.hdf5"
+  base_path: "/home/florpi/june_runs/"
+  world_path: "/home/florpi/JUNE/scripts/tests.hdf5"
   results_path: "@base_path/results_long_runs/r000"
   summary_path: "@results_path/summaries" # note the different "base"!
   stdout_path: "default"
@@ -30,18 +30,14 @@ policy_configuration:
 
 parameter_configuration:
   iteration: 1
+  parameters_to_run: "all"
   # number_of_samples: 250 # irrelevant here, as running a grid.
-
-  config_type: "grid"
+  config_type: "file"
   parameters_to_vary:
-    policies:
-      social_distancing:
-        beta_factor: [0.595, 0.700, 0.804]
-      susceptibility:
-        susceptibility: [0.5, 1.0]
-
-  #fixed_parameters: "./run_configs/example_parameters.json"
-  # can also provide fixed parameters as dict like policy_configuration
+    path:
+      "sample_parameters.csv" 
+#fixed_parameters: "./run_configs/example_parameters.json"
+# can also provide fixed parameters as dict like policy_configuration
 
 summary_configuration:
   'age_bins' : [0, 6, 18, 65, 85, 100]

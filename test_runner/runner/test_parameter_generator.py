@@ -3,7 +3,7 @@ import sys
 # sys.path.insert(0, '../../runner/parameter_generator.py')
 sys.path.insert(0, "../../runner")
 
-import csv
+import pandas as pd
 import parameter_generator as pg
 
 
@@ -37,10 +37,8 @@ def test__from_file():
         {"beta_pub": 2, "beta_household": 3, "beta_care_home": 0.9},
         {"beta_pub": 3, "beta_household": 1, "beta_care_home": 0.2},
     ]
-    with open("parameters.csv", "w", newline="") as f:
-        dict_writer = csv.DictWriter(f, parameter_list[0].keys())
-        dict_writer.writeheader()
-        dict_writer.writerows(parameter_list)
+    df = pd.DataFrame(parameter_list)
+    df.to_csv('parameters.csv', sep=' ', index_label=False)
 
     parameter_generator = pg.ParameterGenerator.from_file(
         path_to_parameters="parameters.csv", parameters_to_run="all"

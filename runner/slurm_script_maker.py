@@ -5,8 +5,7 @@ import subprocess
 
 from sklearn.model_selection import ParameterGrid
 
-from .runner import parse_paths
-from .parameter_generator import _read_parameters_to_run, _get_len_parameter_grid
+from .runner import parse_paths 
 import june
 
 queue_to_max_cpus = {"cosma": 16, "cosma6": 16, "cosma7": 28, "jasmin": 20, "cosma-prince" : 16}
@@ -48,9 +47,8 @@ class SlurmScriptMaker:
         self.email_address = email_address
         self.iteration = iteration
         self.max_time = max_time
-        self.num_runs = num_runs
-        if num_runs is not None:
-            self.parameters_to_run = _read_parameters_to_run(parameters_to_run, num_runs)
+        self.parameters_to_run = parameters_to_run 
+        self.num_runs = len(self.parameters_to_run) 
         self.max_cpus_per_node = queue_to_max_cpus[queue]
         self.parallel_tasks_path = Path(parallel_tasks_path)
         self.runner_path = Path(runner_path)
@@ -67,7 +65,7 @@ class SlurmScriptMaker:
         self.stdout_dir.mkdir(parents=True, exist_ok=True)
 
     @classmethod
-    def from_file(cls, config_path: str = default_config_path):
+    def from_file(cls, parameters_to_run, config_path: str = default_config_path):
         with open(config_path, "r") as f:
             config = yaml.load(f, Loader=yaml.FullLoader)
         cls.config_checks(config)
@@ -100,10 +98,6 @@ class SlurmScriptMaker:
             )
         else:
             num_runs = config["parameter_configuration"].get("number_of_samples")
-        if config["parameter_configuration"].get("parameters_to_run") is None: 
-            parameters_to_run = "all"
-        else:
-            parameters_to_run = config["parameter_configuration"]["parameters_to_run"]
         paths = parse_paths(
             config["paths_configuration"], region=region, iteration=iteration
         )
