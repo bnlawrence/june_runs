@@ -254,6 +254,7 @@ class Runner:
         leisure = generate_leisure_for_config(
             world, self.paths_configuration["config_path"]
         )
+        print("Comment is...", self.comment)
         simulator = Simulator.from_file(
             world=world,
             interaction=interaction,

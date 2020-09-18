@@ -35,14 +35,14 @@ def parse_paths(paths_configuration, region, iteration):
             reconstructed = "/".join(reconstructed)
             ret[name] = Path(reconstructed)
 
+    ret["data_path"] = ret["results_path"] / "data"
+    ret["data_path"].mkdir(exist_ok=True, parents=True)    
+
     ret["results_path"] = ret["results_path"] / region / f"iteration_{iteration:02}"
     ret["results_path"].mkdir(exist_ok=True, parents=True)
 
     ret["summary_path"] = ret["summary_path"] / region / f"iteration_{iteration:02}"
     ret["summary_path"].mkdir(exist_ok=True, parents=True)
-
-    ret["data_path"] = ret["results_path"] / "data"
-    ret["data_path"].mkdir(exist_ok=True, parents=True)
 
     return ret
     
@@ -115,10 +115,10 @@ def copy_data(new_data_path: "PosixPath", june_data_path=None):
     if june_data_path is None:
         june_data_path = june.paths.data_path
 
-    if input_data_path.exist() is False:
-        shutil.copy2(june_data_path, new_data_path)
-    else:
-        print("Skip data copy")
+    #if input_data_path.exists() is False:
+    #    shutil.copytree(june_data_path, new_data_path, dirs_exist_ok=True)
+    #else:
+    #    print("Skip data copy")
     
     return None    
 

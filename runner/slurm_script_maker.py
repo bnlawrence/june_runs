@@ -107,6 +107,7 @@ class SlurmScriptMaker:
         paths = parse_paths(
             config["paths_configuration"], region=region, iteration=iteration
         )
+        copy_data(paths["data_path"])
         return cls(
             config_path=config_path,
             jobs_per_node=jobs_per_node,
