@@ -5,6 +5,8 @@ import json
 import yaml
 import time
 import psutil
+import numba as nb
+import random
 
 from pathlib import Path
 from collections import OrderedDict, defaultdict
@@ -33,6 +35,21 @@ default_values = {
     "lockdown_ratio": 0.5,
     "seed_strength": 1.0,
 }
+
+def set_random_seed(seed=999):
+    """
+    Sets global seeds for testing in numpy, random, and numbaized numpy.
+    """
+
+    @nb.njit(cache=True)
+    def set_seed_numba(seed):
+        random.seed(seed)
+        np.random.seed(seed)
+
+    np.random.seed(seed)
+    set_seed_numba(seed)
+    random.seed(seed)
+    return
 
 
 def parse_paths(paths_configuration, region, iteration):
@@ -103,6 +120,15 @@ class Runner:
         summary_configuration: dict = None,
         verbose: bool = False,
     ):
+        # fix seed before everything for reproducibility
+        # TODO: save this to the logger or wherever
+        if "random_seed" not in parameter_configuration or parameter_configuration["random_seed"] == "random":
+            random_seed = random.randint(0, 1_000_000_000)
+            print("Random seed set to a random value ({random_seed})")
+        else:
+            random_seed = set_random_seed(int(parameter_configuration["random_seed"]))
+            print("Random seed set to {random_seed}")
+        set_random_seed(random_seed)
         self.system_configuration = system_configuration
         self.region = region
         self.iteration = iteration
