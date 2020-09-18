@@ -1,155 +1,149 @@
 import numpy as np
+import csv
 import os
 import sys
 import yaml
 import json
+
+import pandas as pd
 from pyDOE2 import lhs
 from SALib.util import scale_samples
 from pathlib import Path
-from collections import OrderedDict, defaultdict
+from collections import OrderedDict, defaultdict, Counter
 from sklearn.model_selection import ParameterGrid
 import itertools
 
+from typing import List, Optional
+
 default_config_file = Path(__file__).parent.parent / "run_configs/config_example.yaml"
-
-def verbose_print(*args,verbose=False):
-    if verbose:
-        print(*args)
-
-def _read_parameters_to_run(parameters_to_run, num_runs):
-    if parameters_to_run is None:
-        parameters_to_run = "all"
-    if type(parameters_to_run) == str:
-        if parameters_to_run == "all":
-            parameters_to_run = np.arange(0, num_runs)
-        else:
-            low, high = list(map(int, parameters_to_run.split("-")))
-            parameters_to_run = np.arange(low, high+1)
-    return parameters_to_run
-
-def _get_len_parameter_grid(parameter_configuration):
-    len_grid = len(
-        ParameterGenerator._do_grid(
-            parameter_configuration["parameters_to_vary"]
-        )
-    )
-    return len_grid
 
 
 class ParameterGenerator:
-    """
-    Given a parameter configuration with parameter bounds, generates a 
-    latin hypercube sampler that returns random parameter variations.
-    """
-
-    config_types = ["latin_hypercube", "grid"]
-
-    def __init__(self, parameter_configuration: dict = None, verbose=False):
-        self.parameter_dict = self._read_parameter_configuration(
-            parameter_configuration["parameters_to_vary"]
-        )
-        if parameter_configuration.get("fixed_parameters") is not None:
-            if type(parameter_configuration["fixed_parameters"]) is dict:
-                self.fixed_paramters = _read_parameter_configuration(
-                    parameter_configuration["fixed_parameters"]
-                )
-            elif type(parameter_configuration["fixed_parameters"]) is str:
-                with open(parameter_configuration["fixed_parameters"]) as json_file:
-                    self.fixed_parameters = json.load(json_file)
-        else:
-            self.fixed_parameters = dict()
-
-        if parameter_configuration.get("config_type") in [None, "default"]:
-            self.config_type = "latin_hypercube"
-        elif parameter_configuration.get("config_type") in self.config_types: 
-            self.config_type = parameter_configuration["config_type"]
-        else:
-            print("Available config_types:", config_types)
-        verbose_print(f"set config type to {self.config_type}", verbose=True)
-        
-        if self.config_type == "latin_hypercube":
-            # Get num samples first -- as LatHyp depends on num_samples.
-            self.num_samples = parameter_configuration["number_of_samples"]
-            self.parameter_array = self._generate_lhs_array()
-        elif self.config_type == "grid":
-            # Get num samples last -- n_samples determined by the grid permutations.
-            self.parameter_array = self._generate_grid_array()
-            self.num_samples = len(self.parameter_array)      
-
-        self.parameters_to_run = _read_parameters_to_run(
-            parameter_configuration.get("parameters_to_run"), 
-            self.num_samples
-        )       
-        # self.lhs_array = self._generate_lhs_array_from_config()
+    def __init__(
+        self,
+        parameter_list: List[dict],
+        parameters_to_fix: Optional[dict] = None,
+        parameters_to_run: List[int] = "all",
+    ):
+        self._check_sanity(parameter_list, parameters_to_fix)
+        self.parameter_list = parameter_list
+        for i, parameters in enumerate(self.parameter_list):
+            parameters["run_number"] = i
+            if parameters_to_fix is not None:
+                for key, value in parameters_to_fix.items():
+                    parameters[key] = value
+        self.parameters_to_run = self._read_parameters_to_run(parameters_to_run)
 
     @classmethod
-    def from_file(cls, config_path: str = default_config_file):
-        with open(config_path, "r") as f:
-            config = yaml.load(f, Loader=yaml.FullLoader)
-        return cls(config["parameter_configuration"])
+    def from_file(cls, path_to_parameters: str, parameters_to_fix: Optional[dict] = None, parameters_to_run="all"):
+        parameter_list = pd.read_csv(path_to_parameters, sep=" ").to_dict("records")
+        return cls(parameter_list=parameter_list, parameters_to_fix=parameters_to_fix, parameters_to_run=parameters_to_run)
 
-    @staticmethod # need to fix "_get_len_parameter_grid()" if remove @staticmethod
-    def _read_parameter_configuration(parameter_configuration):
-        parameter_dict = OrderedDict()
-        for parameter_type, parameter_values in parameter_configuration.items():
-            if parameter_type == "betas":
-                for beta_name, beta_range in parameter_values.items():
-                    parameter_dict["beta_" + beta_name] = beta_range
-            elif parameter_type == "policies":
-                for policy_name, policy_parameters in parameter_values.items():
-                    for parameter_name, parameter_value in policy_parameters.items():
-                        parameter_dict[
-                            policy_name + "_" + parameter_name
-                        ] = parameter_value
+    @classmethod
+    def from_grid(cls, parameter_dict: List[dict], parameters_to_fix: Optional[dict] = None, parameters_to_run="all"):
+        keys, values = zip(*parameter_dict.items())
+        permutations_dicts = [dict(zip(keys, v)) for v in itertools.product(*values)]
+        return cls(
+            parameter_list=permutations_dicts, parameters_to_fix = parameters_to_fix, parameters_to_run=parameters_to_run
+        )
+
+    @classmethod
+    def from_regular_grid(cls, parameter_dict: List[dict], parameters_to_fix: Optional[dict] = None, parameters_to_run="all"):
+        for key, value in parameter_dict.items():
+            parameter_dict[key] = np.linspace(
+                start=value[0], stop=value[1], num=value[2]
+            )
+        return cls.from_grid(
+            parameter_dict=parameter_dict, parameters_to_fix=parameters_to_fix, parameters_to_run=parameters_to_run
+        )
+
+    @classmethod
+    def from_latin_hypercube(cls, parameter_bounds, n_samples, parameters_to_fix: Optional[dict] = None, parameters_to_run="all"):
+        return cls(
+            parameter_list=cls._generate_lhs(
+                cls, parameter_bounds=parameter_bounds, n_samples=n_samples
+            ),
+            parameters_to_fix = parameters_to_fix,
+            parameters_to_run=parameters_to_run,
+        )
+
+    def _check_sanity(self, parameters_to_vary, parameters_to_fix):
+        # Check that in list of parameters all have the same keys
+        counter_list = []
+        for parameter in parameters_to_vary:
+            # check a key is not repeated within same row
+            counter = Counter(list(parameter.keys()))
+            try:
+                for key, value in counter.items():
+                    assert value == 1
+            except:
+                raise ValueError("There are rows with repeated parameters!")
+            counter_list.append(counter)
+        try:
+            unique_counter = [
+                dict(s) for s in set(frozenset(c.items()) for c in counter_list)
+            ]
+            assert len(unique_counter) == 1
+        except:
+            raise ValueError(
+                "some of the parameter configurations dont have the same parameters"
+            )
+
+        # Check that parameters_to_fix are not included in parameters_to_vary otherwise error
+        try:
+            if parameters_to_fix is not None:
+                print(f"Parameters being fixed = ", parameters_to_fix.keys())
+                assert (
+                    set(parameters_to_fix.keys()) & set(parameters_to_vary[0].keys())
+                    == set()
+                )
             else:
-                parameter_dict[parameter_type] = parameter_values
-        return parameter_dict
+                print(f"No fixed parameters")
+        except:
+            raise ValueError(
+                "Check what you are doing! You are varying some of the parameters that you are fixing and I can tell you that it is a bad idea"
+            )
+        # Print what parameters are being varied and what parameters are fixed
+        print(f"Paramters being varied = ", parameters_to_vary[0].keys())
 
-    def _generate_lhs_array(self, seed=1):
+    def _generate_lhs(self, parameter_bounds, n_samples, seed=1):
         """
         Generates a latin hypercube array.
         """
-        bounds = list(self.parameter_dict.values())
+        bounds = list(parameter_bounds.values())
         num_vars = len(bounds)
         lhs_array = lhs(
-            n=num_vars, samples=self.num_samples, criterion="maximin", random_state=seed
+            n=num_vars, samples=n_samples, criterion="maximin", random_state=seed
         )
         # scale to the bounds
         scale_samples(lhs_array, bounds)
-        return lhs_array
+        parameter_dicts = []
+        for i in range(len(lhs_array)):
+            parameter_dicts.append(
+                {
+                    key: value
+                    for key, value in zip(parameter_bounds.keys(), lhs_array[i])
+                }
+            )
+        return parameter_dicts
 
-    @staticmethod
-    def _do_grid(parameters_dict):
-        keys, values = zip(*parameters_dict.items())
-        permutations_dicts = [
-            dict(zip(keys, v)) for v in itertools.product(*values)
-        ]
-        return permutations_dicts
-
-    def _generate_grid_array(self, ):  
-        return self._do_grid(self.parameter_dict)
+    def _read_parameters_to_run(self, parameters_to_run):
+        if parameters_to_run is None:
+            parameters_to_run = "all"
+        if type(parameters_to_run) == str:
+            if parameters_to_run == "all":
+                parameters_to_run = np.arange(0, len(self.parameter_list))
+            else:
+                low, high = list(map(int, parameters_to_run.split("-")))
+                parameters_to_run = np.arange(low, high + 1)
+        return parameters_to_run
 
     def get_parameters_from_index(self, idx):
-        """Generates a parameter dictionary from latin hypercube array.
-        idx is an integer that should be passed from each run,
-        i.e. first run will have idx = 0, second run idx = 1...
-        This will index out the row from the latin hypercube."""
         index_to_run = self.parameters_to_run[idx]
-        parameter_values = self.parameter_array[index_to_run]
-        ret = {}
-        for i, (parameter_name,fixed_val) in enumerate(self.fixed_parameters.items()):
-            ret[parameter_name] = fixed_val
-        for i, parameter_name in enumerate(self.parameter_dict.keys()):
-            if self.config_type == "latin_hypercube":
-                ret[parameter_name] = parameter_values[i]
-            elif self.config_type == "grid":
-                ret[parameter_name] = parameter_values[parameter_name]
-        ret["run_number"] = int(index_to_run)
-        return ret
+        return self.parameter_list[index_to_run]
 
     def __getitem__(self, idx):
         return self.get_parameters_from_index(idx)
 
     def __iter__(self):
-        return iter([self[idx] for idx in self.parameters_to_run])
-
+        return iter([self[idx] for idx in self.parameter_list])
