@@ -60,35 +60,22 @@ def memory_status(when='now'):
     return f"memory {when}: \n    {tot}, {used}, {perc}, {avail}"
 
 def config_checks(config):
-    """
-    Do some basic checks on the config:
-        Is the "region" parameter in the name of the world?
-        
-        
-    """
+    check = "\033[33mCHECK:\033[0m\n   "
+
     paths = parse_paths(
         config["paths_configuration"], 
         region=config["region"], 
         iteration=config["iteration"]
     )
-    check = "\033[33mCHECK:\033[0m\n   "
     wp = paths["world_path"].stem
     if config["region"] not in paths["world_path"].stem:
         print(check,"Have you set the world_path or region in config correctly?")
     if paths["world_path"].exists() is False:
-        print(check,"World_path does not exist.")
-    if config["parameter_configuration"].get("config_type") == "grid":
-        print(config["parameter_configuration"]["parameters_to_vary"])
-        grid_len = _get_len_parameter_grid(
-            config["parameter_configuration"]
-        )
-        print(f"Running with GRID parameters, grid length {grid_len}")
-        if config["parameter_configuration"].get(
+        print(check,"world_path does not exist.")
+    if config["parameter_configuration"].get(
             "parameters_to_run"
         ) not in [None, "all"]:
             print(check,"are you sure you don't want \"all\" parameters_to_run?")
-    if config.get("comment") is None:
-        print(check,"Provide a \"comment\" describing the purpose of this/these runs.")
     return None
 
 def git_checks():
