@@ -30,7 +30,6 @@ class SlurmScriptMaker:
         region="london",
         iteration=1,
         config_type="latin_hypercube",
-        num_runs=250,
         parameters_to_run="all",
         output_path="june_results",
         stdout_path=None,
@@ -92,12 +91,6 @@ class SlurmScriptMaker:
         jobs_per_node = system_configuration["jobs_per_node"]
         region = config["region"]
         iteration = config["iteration"]
-        if config["parameter_configuration"].get("config_type") == "grid":
-            num_runs = _get_len_parameter_grid(
-                config["parameter_configuration"]
-            )
-        else:
-            num_runs = config["parameter_configuration"].get("number_of_samples")
         paths = parse_paths(
             config["paths_configuration"], region=region, iteration=iteration
         )
@@ -114,7 +107,6 @@ class SlurmScriptMaker:
             runner_path=run_script,
             region=region,
             iteration=iteration,
-            num_runs=num_runs,
             parameters_to_run=parameters_to_run,
             output_path=paths["results_path"],
             stdout_path=paths["stdout_path"],
