@@ -123,25 +123,25 @@ class Runner:
                 processed_parameters,
                 n_samples=parameter_configuration["number_of_samples"],
                 parameters_to_run=parameter_configuration["parameters_to_run"],
-                parameters_to_fix=parameter_configuration['parameters_to_fix']
+                parameters_to_fix=parameter_configuration.get('parameters_to_fix',None)
             )
         elif parameter_configuration.get("config_type", None) == "grid":
             self.parameter_generator = ParameterGenerator.from_grid(
                 processed_parameters,
                 parameters_to_run=parameter_configuration["parameters_to_run"],
-                parameters_to_fix=parameter_configuration['parameters_to_fix']
+                parameters_to_fix=parameter_configuration.get('parameters_to_fix', None)
             )
         elif parameter_configuration.get("config_type", None) == "regular_grid":
             self.parameter_generator = ParameterGenerator.from_regular_grid(
                 processed_parameters,
                 parameters_to_run=parameter_configuration["parameters_to_run"],
-                parameters_to_fix=parameter_configuration['parameters_to_fix']
+                parameters_to_fix=parameter_configuration.get('parameters_to_fix', None)
             )
         elif parameter_configuration.get("config_type", None) == "file":
             self.parameter_generator = ParameterGenerator.from_file(
                 parameter_configuration['parameters_to_vary']['path'],
                 parameters_to_run=parameter_configuration["parameters_to_run"],
-                parameters_to_fix=parameter_configuration['parameters_to_fix']
+                parameters_to_fix=parameter_configuration.get('parameters_to_fix', None)
             )
         else:
             raise NotImplementedError
