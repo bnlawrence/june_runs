@@ -34,7 +34,9 @@ parameter_configuration:
   config_type: "file"
   parameters_to_vary:
     path: "/cosma6/data/dp004/dc-cues1/june_runs/sample_parameters.csv" 
-#fixed_parameters: "./run_configs/example_parameters.json"
+  parameters_to_fix:
+    beta_care_home: 0.1
+    quarantine_household_compliance: 0.3
 # can also provide fixed parameters as dict like policy_configuration
 
 summary_configuration:

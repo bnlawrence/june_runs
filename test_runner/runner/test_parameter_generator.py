@@ -100,4 +100,26 @@ def test__from_lhs():
         assert 0. < params['beta_pub'] < 1.
         assert 100. < params['beta_household'] < 200.
 
+def test__fix_parameters():
+    parameter_list = [
+        {"beta_pub": 0, "beta_household": 0, "beta_care_home": 0.2},
+        {"beta_pub": 1, "beta_household": 2, "beta_care_home": 0.5},
+        {"beta_pub": 2, "beta_household": 3, "beta_care_home": 0.9},
+        {"beta_pub": 3, "beta_household": 1, "beta_care_home": 0.2},
+    ]
+    parameters_to_fix = {'beta_grocery': 10, 'quarantine_household_compliance': 0.}
+
+    parameter_generator = pg.ParameterGenerator(parameter_list,
+            parameters_to_fix=parameters_to_fix
+    )
+    for i, parameters in enumerate(parameter_list):
+        parameters['run_number'] = i
+        parameters['beta_grocery'] = 10
+        parameters['quarantine_household_compliance'] = 0.
+    assert parameter_generator[0] == parameter_list[0]
+    assert parameter_generator[1] == parameter_list[1]
+    assert parameter_generator[2] == parameter_list[2]
+
+    assert parameter_generator[0]['run_number'] == 0
+
 

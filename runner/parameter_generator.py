@@ -20,11 +20,14 @@ default_config_file = Path(__file__).parent.parent / "run_configs/config_example
 
 class ParameterGenerator:
     def __init__(
-        self, parameter_list: List[dict], parameters_to_run: List[int] = "all"
+            self, parameter_list: List[dict], parameters_to_fix: Optional[dict] = None, parameters_to_run: List[int] = "all"
     ):
         self.parameter_list = parameter_list
         for i, parameters in enumerate(self.parameter_list):
             parameters['run_number'] = i
+            if parameters_to_fix is not None:
+                for key, value in parameters_to_fix.items():
+                    parameters[key] = value
         self.parameters_to_run = self._read_parameters_to_run(parameters_to_run)
 
     @classmethod
