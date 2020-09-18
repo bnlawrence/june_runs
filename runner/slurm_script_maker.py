@@ -5,8 +5,7 @@ import subprocess
 
 from sklearn.model_selection import ParameterGrid
 
-from .runner import parse_paths 
-import june
+from .utils import parse_paths, config_checks, git_checks, copy_data
 
 queue_to_max_cpus = {"cosma": 16, "cosma6": 16, "cosma7": 28, "jasmin": 20, "cosma-prince" : 16}
 default_parallel_tasks_path = (
@@ -67,8 +66,8 @@ class SlurmScriptMaker:
     def from_file(cls, parameters_to_run, config_path: str = default_config_path):
         with open(config_path, "r") as f:
             config = yaml.load(f, Loader=yaml.FullLoader)
-        cls.config_checks(config)
-        cls.git_checks()
+        config_checks(config)
+        git_checks()
         system_configuration = config["system_configuration"]
         system = system_configuration["name"]
         queue = system_configuration["queue"]
@@ -94,6 +93,7 @@ class SlurmScriptMaker:
         paths = parse_paths(
             config["paths_configuration"], region=region, iteration=iteration
         )
+        copy_data(paths["data_path"])
         return cls(
             config_path=config_path,
             jobs_per_node=jobs_per_node,
@@ -113,53 +113,6 @@ class SlurmScriptMaker:
             jobname = jobname
         )
     
-    @staticmethod
-    def config_checks(config):
-        paths = parse_paths(
-            config["paths_configuration"], 
-            region=config["region"], 
-            iteration=config["iteration"]
-        )
-        wp = paths["world_path"].stem
-        if config["region"] not in paths["world_path"].stem:
-            print("CHECK:\n     Have you set the world_path or region in config correctly?")
-        if paths["world_path"].exists() is False:
-            print("CHECK:\n     world_path does not exist.")
-        if config["parameter_configuration"].get(
-                "parameters_to_run"
-            ) not in [None, "all"]:
-                print("CHECK:\n    are you sure you don't want \"all\" parameters_to_run?")
-        return None
-
-    @staticmethod
-    def git_checks():
-        june_git = Path(june.__path__[0]).parent / '.git'
-        branch_cmd = f'git --git-dir {june_git} rev-parse --abbrev-ref HEAD'.split()
-        try:
-            branch = subprocess.run(
-                branch_cmd,stdout=subprocess.PIPE
-            ).stdout.decode('utf-8').strip()
-        except:
-            return None
-        if branch != 'master':
-            print(f"You\'re running on branch {branch.upper()}")
-        else:
-            local_SHA_cmd = f'git --git-dir {june_git} log -n 1 --format="%h"'.split()
-            remote_SHA_cmd = f'git --git-dir {june_git} log -n 1 --format="%h"'.split()
-            try:
-                local_SHA = subprocess.run(
-                    local_SHA_cmd,stdout=subprocess.PIPE
-                ).stdout.decode('utf-8').strip()
-                remote_SHA = subprocess.run(
-                    remote_SHA_cmd,stdout=subprocess.PIPE
-                ).stdout.decode('utf-8').strip()
-            except:
-                return None
-            if local_SHA != remote_SHA:
-                print(f"On {branch}, and your JUNE git SHA is {local_SHA}. Is this the latest master?")
-            return None
-
-
     def make_script_lines(self, script_number, index_low, index_high):
         stdout_name = (
             self.stdout_dir / f"{self.region}_{self.iteration}_{script_number:03d}"

@@ -22,9 +22,11 @@ from june.infection import InfectionSelector
 from june.hdf5_savers import generate_world_from_hdf5
 from june import paths
 from june.logger.read_logger import ReadLogger
+
 from .parameter_generator import ParameterGenerator
 from .extract_data_new import *
 from .plotter import Plotter
+from .utils import parse_paths, config_checks, git_checks, verbose_print, memory_status
 
 default_config_file = Path(__file__).parent.parent / "run_configs/config_example.yaml"
 
@@ -52,56 +54,6 @@ def set_random_seed(seed=999):
     return
 
 
-def parse_paths(paths_configuration, region, iteration):
-    """
-    Substitutes placeholders in config.
-    """
-    ret = {}
-    names_with_placeholder = [
-        key for key, value in paths_configuration.items() if "@" in value
-    ]
-    names_without_placeholder = [
-        key for key, value in paths_configuration.items() if "@" not in value
-    ]
-    for name in names_without_placeholder:
-        ret[name] = Path(paths_configuration[name])
-    if names_with_placeholder:
-        for name in names_with_placeholder:
-            value = paths_configuration[name]
-            value_split = value.split("/")
-            reconstructed = []
-            for split in value_split:
-                if "@" in split:
-                    placeholder_name = split[1:]
-                    reconstructed.append(ret[placeholder_name].as_posix())
-                else:
-                    reconstructed.append(split)
-            reconstructed = "/".join(reconstructed)
-            ret[name] = Path(reconstructed)
-
-    ret["results_path"] = ret["results_path"] / region / f"iteration_{iteration:02}"
-    ret["results_path"].mkdir(exist_ok=True, parents=True)
-
-    ret["summary_path"] = ret["summary_path"] / region / f"iteration_{iteration:02}"
-    ret["summary_path"].mkdir(exist_ok=True, parents=True)
-
-    return ret
-
-
-def verbose_print(*args, verbose=False):
-    if verbose:
-        print(*args)
-
-
-def memory_status(when="now"):
-    mem = psutil.virtual_memory()
-    tot = f"total: {mem.total/1024**3:.2f}G"
-    used = f"used: {mem.used/1024**3:.2f}G"
-    perc = f"percent used: {mem.percent:.2f}%"
-    avail = f"avail: {mem.available/1024**3:.2f}G"
-    return f"memory {when}: \n    {tot}, {used}, {perc}, {avail}"
-
-
 class Runner:
     """
     A class to handle parameter runs of the JUNE code.
@@ -111,6 +63,7 @@ class Runner:
         self,
         region: str = None,
         iteration: int = 1,
+        comment: str = None,
         system_configuration: dict = None,
         paths_configuration: dict = None,
         infection_configuration: dict = None,
@@ -124,13 +77,15 @@ class Runner:
         # TODO: save this to the logger or wherever
         if "random_seed" not in parameter_configuration or parameter_configuration["random_seed"] == "random":
             random_seed = random.randint(0, 1_000_000_000)
-            print("Random seed set to a random value ({random_seed})")
+            print(f"Random seed set to a random value ({random_seed})")
         else:
             random_seed = set_random_seed(int(parameter_configuration["random_seed"]))
             print("Random seed set to {random_seed}")
         set_random_seed(random_seed)
+        self.random_seed = random_seed
         self.system_configuration = system_configuration
         self.region = region
+        self.comment = f"{comment} - random_state_seed set to {random_seed}"
         self.iteration = iteration
         self.paths_configuration = parse_paths(
             paths_configuration, region=region, iteration=iteration
@@ -176,6 +131,8 @@ class Runner:
     def from_file(cls, config_path: str = default_config_file):
         with open(config_path, "r") as f:
             config = yaml.load(f, Loader=yaml.FullLoader)
+        config_checks(config)
+        git_checks()
         return cls(**config)
 
     @staticmethod
@@ -333,13 +290,15 @@ class Runner:
         )
         n_cases_df = oc.cases_from_deaths()
         # Seed over 2 days
-        n_cases_to_seed_df = n_cases_df.loc["2020-02-28":"2020-02-29"]
+        n_cases_to_seed_df = n_cases_df.loc["2020-02-28":"2020-03-02"]
         infection_seed = InfectionSeed.from_file(
             super_areas=world.super_areas,
             selector=infection_selector,
             n_cases_region=n_cases_to_seed_df,
             seed_strength=seed_strength,
         )
+        print('\n\n infection seed\n')
+        print(infection_seed.__dict__)
         return infection_seed
 
     def get_index_to_run(self, parameter_index):
@@ -382,6 +341,7 @@ class Runner:
         leisure = generate_leisure_for_config(
             world, self.paths_configuration["config_path"]
         )
+        print("Comment is...", self.comment)
         simulator = Simulator.from_file(
             world=world,
             interaction=interaction,
@@ -391,6 +351,7 @@ class Runner:
             infection_selector=infection_selector,
             policies=policies,
             save_path=save_path,
+            comment=self.comment,
         )
         return simulator
 
