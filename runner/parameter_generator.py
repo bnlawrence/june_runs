@@ -35,34 +35,35 @@ class ParameterGenerator:
         self.parameters_to_run = self._read_parameters_to_run(parameters_to_run)
 
     @classmethod
-    def from_file(cls, path_to_parameters: str, parameters_to_run="all"):
+    def from_file(cls, path_to_parameters: str, parameters_to_fix: Optional[dict] = None, parameters_to_run="all"):
         parameter_list = pd.read_csv(path_to_parameters, sep=" ").to_dict("records")
-        return cls(parameter_list=parameter_list, parameters_to_run=parameters_to_run)
+        return cls(parameter_list=parameter_list, parameters_to_fix=parameters_to_fix, parameters_to_run=parameters_to_run)
 
     @classmethod
-    def from_grid(cls, parameter_dict: List[dict], parameters_to_run="all"):
+    def from_grid(cls, parameter_dict: List[dict], parameters_to_fix: Optional[dict] = None, parameters_to_run="all"):
         keys, values = zip(*parameter_dict.items())
         permutations_dicts = [dict(zip(keys, v)) for v in itertools.product(*values)]
         return cls(
-            parameter_list=permutations_dicts, parameters_to_run=parameters_to_run
+            parameter_list=permutations_dicts, parameters_to_fix = parameters_to_fix, parameters_to_run=parameters_to_run
         )
 
     @classmethod
-    def from_regular_grid(cls, parameter_dict: List[dict], parameters_to_run="all"):
+    def from_regular_grid(cls, parameter_dict: List[dict], parameters_to_fix: Optional[dict] = None, parameters_to_run="all"):
         for key, value in parameter_dict.items():
             parameter_dict[key] = np.linspace(
                 start=value[0], stop=value[1], num=value[2]
             )
         return cls.from_grid(
-            parameter_dict=parameter_dict, parameters_to_run=parameters_to_run
+            parameter_dict=parameter_dict, parameters_to_fix=parameters_to_fix, parameters_to_run=parameters_to_run
         )
 
     @classmethod
-    def from_latin_hypercube(cls, parameter_bounds, n_samples, parameters_to_run="all"):
+    def from_latin_hypercube(cls, parameter_bounds, n_samples, parameters_to_fix: Optional[dict] = None, parameters_to_run="all"):
         return cls(
             parameter_list=cls._generate_lhs(
                 cls, parameter_bounds=parameter_bounds, n_samples=n_samples
             ),
+            parameters_to_fix = parameters_to_fix,
             parameters_to_run=parameters_to_run,
         )
 
@@ -74,7 +75,6 @@ class ParameterGenerator:
             counter = Counter(list(parameter.keys()))
             try:
                 for key, value in counter.items():
-                    print(value)
                     assert value == 1
             except:
                 raise ValueError("There are rows with repeated parameters!")
