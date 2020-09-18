@@ -121,6 +121,7 @@ class Runner:
         verbose: bool = False,
     ):
         # fix seed before everything for reproducibility
+        # TODO: save this to the logger or wherever
         if "random_seed" not in parameter_configuration or parameter_configuration["random_seed"] == "random":
             random_seed = random.randint(0, 1_000_000_000)
             print("Random seed set to a random value ({random_seed})")
