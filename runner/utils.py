@@ -60,6 +60,12 @@ def memory_status(when='now'):
     return f"memory {when}: \n    {tot}, {used}, {perc}, {avail}"
 
 def config_checks(config):
+    """
+    Do some basic checks on the config:
+        Is the "region" parameter in the name of the world?
+        
+        
+    """
     paths = parse_paths(
         config["paths_configuration"], 
         region=config["region"], 
@@ -86,6 +92,10 @@ def config_checks(config):
     return None
 
 def git_checks():
+    """
+    Print the JUNE git version.
+    Print the JUNE git SHA
+    """
     check = "\033[33mCHECK:\033[0m\n   "
     june_git = Path(june.__path__[0]).parent / '.git'
     branch_cmd = f'git --git-dir {june_git} rev-parse --abbrev-ref HEAD'.split()
@@ -105,8 +115,7 @@ def git_checks():
     except:
         print("Can\'t read local git SHA")
         local_SHA = "unavailable"
-    if branch != 'master':
-        print(f"You\'re running on branch {branch.upper()}")
+    print(f"You\'re running on branch {branch.upper()}")
 
 def copy_data(new_data_path: "PosixPath", june_data_path=None):
     input_data_path = new_data_path / "input"
