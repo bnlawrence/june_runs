@@ -32,6 +32,7 @@ parameter_configuration:
   iteration: 1
   number_of_samples: 250
   parameters_to_run: "all"
+  random_seed: "random"
 
   config_type: "latin_hypercube" # irrelevant, latin_hypercubeby default
   parameters_to_vary:
