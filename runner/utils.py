@@ -104,7 +104,7 @@ def git_checks():
         local_SHA = "unavailable"
     print(f"You\'re running on branch {branch.upper()}")
 
-def copy_data(new_data_path june_data_path=None):
+def copy_data(new_data_path, june_data_path=None):
     input_data_path = new_data_path / "input"
     covid_real_data_path = new_data_path / "covid_real_data"
     
