@@ -1,7 +1,7 @@
 import sys
 
 # sys.path.insert(0, '../../runner/parameter_generator.py')
-sys.path.insert(0, "../../runner")
+sys.path.insert(0, "../runner")
 
 import pandas as pd
 import parameter_generator as pg
