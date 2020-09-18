@@ -125,13 +125,7 @@ class SlurmScriptMaker:
             print("CHECK:\n     Have you set the world_path or region in config correctly?")
         if paths["world_path"].exists() is False:
             print("CHECK:\n     world_path does not exist.")
-        if config["parameter_configuration"].get("config_type") == "grid":
-            print(config["parameter_configuration"]["parameters_to_vary"])
-            grid_len = _get_len_parameter_grid(
-                config["parameter_configuration"]
-            )
-            print(f"Running with GRID parameters, grid length {grid_len}")
-            if config["parameter_configuration"].get(
+        if config["parameter_configuration"].get(
                 "parameters_to_run"
             ) not in [None, "all"]:
                 print("CHECK:\n    are you sure you don't want \"all\" parameters_to_run?")
