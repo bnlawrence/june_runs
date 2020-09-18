@@ -4,3 +4,4 @@ pyDOE2
 SALib
 sklearn
 pytest
+yaml
