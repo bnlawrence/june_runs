@@ -3,6 +3,5 @@ pandas==1.1.0
 pyDOE2
 SALib
 sklearn
-json
 yaml
 pytest
