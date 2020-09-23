@@ -341,7 +341,7 @@ class Runner:
         daily_cases_per_region = oc.get_regional_latent_cases()
         daily_cases_per_super_area = oc.convert_regional_cases_to_super_area(
                 daily_cases_per_region, 
-                dates=["2020-02-28","2020-02-29","2020-03-01", "2020-03-02"]
+                dates=["2020-02-28","2020-03-02"]
                 )
 
         infection_seed = InfectionSeed(
