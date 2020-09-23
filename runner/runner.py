@@ -321,51 +321,37 @@ class Runner:
     def generate_infection_seed(
         self, domain, simulator,
     ):
-        # TODO adapt to use infection_seed
-        # infection seed
-        if self.mpi_rank == 0:
-            with h5py.File(self.paths_configuration["world_path"], "r") as f:
-                population_ids = read_dataset(f["population"]["id"])
-            n_cases = 250
-            selected_ids = np.random.choice(population_ids, n_cases, replace=False)
-            for rank_receiving in range(1, self.mpi_size):
-                self.mpi_comm.send(selected_ids, dest=rank_receiving, tag=0)
+        if "seed_strength" in parameters_dict:
+            seed_strength = parameters_dict["seed_strength"]
+            verbose_print(f"set seed strength {seed_strength:.3f}", verbose=verbose)
+        else:
+            seed_strength = default_values["seed_strength"]
+            verbose_print(
+                f"no seed strength; default {seed_strength:.3f}", verbose=verbose
+            )
+        if "age_profile" in parameters_dict:
+            age_profile = parameters_dict["age_profile"]
+            print(f"doing something with age_profile", age_profile)
+        else:
+            verbose_print(f"no age_profile", verbose=verbose)
+        oc = Observed2Cases.from_file(
+            super_areas=world.super_areas,
+            health_index=infection_selector.health_index_generator,
+        )
+        daily_cases_per_region = oc.get_regional_latent_cases()
+        daily_cases_per_super_area = oc.convert_regional_cases_to_super_area(
+                daily_cases_per_region, 
+                dates=["2020-02-28","2020-02-29","2020-03-01", "2020-03-02"])
 
-        elif self.mpi_rank > 0:
-            selected_ids = self.mpi_comm.recv(source=0, tag=0)
-        for inf_id in selected_ids:
-            if inf_id in domain.people.people_dict:
-                person = domain.people.get_from_id(inf_id)
-                simulator.infection_selector.infect_person_at_time(person, 0.0)
-        # if "seed_strength" in parameters_dict:
-        #    seed_strength = parameters_dict["seed_strength"]
-        #    verbose_print(f"set seed strength {seed_strength:.3f}", verbose=verbose)
-        # else:
-        #    seed_strength = default_values["seed_strength"]
-        #    verbose_print(
-        #        f"no seed strength; default {seed_strength:.3f}", verbose=verbose
-        #    )
-        # if "age_profile" in parameters_dict:
-        #    age_profile = parameters_dict["age_profile"]
-        #    print(f"doing something with age_profile", age_profile)
-        # else:
-        #    verbose_print(f"no age_profile", verbose=verbose)
-        # oc = Observed2Cases.from_file(
-        #    super_areas=world.super_areas,
-        #    health_index=infection_selector.health_index_generator,
-        # )
-        # n_cases_df = oc.cases_from_deaths()
-        ## Seed over 2 days
-        # n_cases_to_seed_df = n_cases_df.loc["2020-02-28":"2020-03-02"]
-        # infection_seed = InfectionSeed.from_file(
-        #    super_areas=world.super_areas,
-        #    selector=infection_selector,
-        #    n_cases_region=n_cases_to_seed_df,
-        #    seed_strength=seed_strength,
-        # )
-        # print("\n\n infection seed\n")
-        # print(infection_seed.__dict__)
-        # return infection_seed
+        infection_seed = InfectionSeed(
+            world=world,
+            selector=infection_selector,
+            n_cases_region=n_cases_to_seed_df,
+            seed_strength=seed_strength,
+        )
+        print("\n\n infection seed\n")
+        print(infection_seed.__dict__)
+        return infection_seed
 
     def generate_logger(self, save_path: str):
         logger = Logger(save_path=save_path, file_name=f"logger.{self.mpi_rank}.hdf5")
