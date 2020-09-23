@@ -335,7 +335,7 @@ class Runner:
         else:
             verbose_print(f"no age_profile", verbose=verbose)
         oc = Observed2Cases.from_file(
-            super_areas=world.super_areas,
+            super_areas=domain.super_areas,
             health_index=infection_selector.health_index_generator,
         )
         daily_cases_per_region = oc.get_regional_latent_cases()
@@ -344,7 +344,7 @@ class Runner:
                 dates=["2020-02-28","2020-02-29","2020-03-01", "2020-03-02"])
 
         infection_seed = InfectionSeed(
-            world=world,
+            world=domain,
             selector=infection_selector,
             n_cases_region=n_cases_to_seed_df,
             seed_strength=seed_strength,
