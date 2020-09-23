@@ -29,7 +29,7 @@ policy_configuration:
 
 parameter_configuration:
   iteration: 1
-  parameters_to_run: [0,1,2,3]
+  parameters_to_run: 'all'
   # number_of_samples: 250 # irrelevant here, as running a grid.
   config_type: "file"
   parameters_to_vary:

@@ -347,7 +347,7 @@ class Runner:
         infection_seed = InfectionSeed(
             world=domain,
             selector=infection_selector,
-            n_cases_region=daily_cases_per_super_area,
+            daily_super_area_cases=daily_cases_per_super_area,
             seed_strength=seed_strength,
         )
         print("\n\n infection seed\n")
