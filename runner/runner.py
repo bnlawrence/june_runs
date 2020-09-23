@@ -346,7 +346,7 @@ class Runner:
 
         infection_seed = InfectionSeed(
             world=domain,
-            selector=infection_selector,
+            infection_selector=infection_selector,
             daily_super_area_cases=daily_cases_per_super_area,
             seed_strength=seed_strength,
         )
