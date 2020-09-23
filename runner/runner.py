@@ -319,7 +319,7 @@ class Runner:
         return policies
 
     def generate_infection_seed(
-        self, domain, simulator,
+        self, parameters_dict, domain, infection_selector, verbose=True
     ):
         if "seed_strength" in parameters_dict:
             seed_strength = parameters_dict["seed_strength"]
@@ -335,18 +335,19 @@ class Runner:
         else:
             verbose_print(f"no age_profile", verbose=verbose)
         oc = Observed2Cases.from_file(
-            super_areas=domain.super_areas,
-            health_index=infection_selector.health_index_generator,
+            health_index_generator=infection_selector.health_index_generator,
+            smoothing=True,
         )
         daily_cases_per_region = oc.get_regional_latent_cases()
         daily_cases_per_super_area = oc.convert_regional_cases_to_super_area(
                 daily_cases_per_region, 
-                dates=["2020-02-28","2020-02-29","2020-03-01", "2020-03-02"])
+                dates=["2020-02-28","2020-02-29","2020-03-01", "2020-03-02"]
+                )
 
         infection_seed = InfectionSeed(
             world=domain,
             selector=infection_selector,
-            n_cases_region=n_cases_to_seed_df,
+            n_cases_region=daily_cases_per_super_area,
             seed_strength=seed_strength,
         )
         print("\n\n infection seed\n")
@@ -394,6 +395,10 @@ class Runner:
         verbose_print(memory_status(when="after world"), verbose=verbose)  #
         # TODO: put comment into logger here (and save path) to not clog simulator
         logger = self.generate_logger(save_path=save_path)
+        infection_seed = self.generate_infection_seed(
+            parameters_dict=parameters_dict, domain=domain, infection_selector=infection_selector
+        )
+
         print("Comment is...", self.comment)
         simulator = Simulator.from_file(
             world=domain,
@@ -401,15 +406,11 @@ class Runner:
             config_filename=self.paths_configuration["config_path"],
             leisure=leisure,
             travel=travel,
-            infection_seed=None,  # TODO
+            infection_seed=infection_seed,  
             infection_selector=infection_selector,
             policies=policies,
             logger=logger,
             # comment=self.comment,#TODO: move this to logger
-        )
-        # TODO: fully adapt this to parallel
-        infection_seed = self.generate_infection_seed(
-            domain=domain, simulator=simulator
         )
         return simulator
 
