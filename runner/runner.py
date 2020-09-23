@@ -30,7 +30,13 @@ from june.domain import Domain, generate_super_areas_to_domain_dict
 from june.logger import Logger
 
 from .parameter_generator import ParameterGenerator
-from .extract_data_new import save_regional_summaries, save_age_summaries, save_world_summaries, save_hospital_summary, save_infection_locations
+from .extract_data_new import (
+    save_regional_summaries,
+    save_age_summaries,
+    save_world_summaries,
+    save_hospital_summary,
+    save_infection_locations,
+)
 from .plotter import Plotter
 from .utils import parse_paths, config_checks, git_checks, verbose_print, memory_status
 
@@ -185,7 +191,9 @@ class Runner:
         """
         with h5py.File(self.paths_configuration["world_path"], "r") as f:
             n_super_areas = f["geography"].attrs["n_super_areas"]
-        super_areas_to_domain_dict = generate_super_areas_to_domain_dict(number_of_super_areas = n_super_areas, number_of_domains=self.mpi_size)
+        super_areas_to_domain_dict = generate_super_areas_to_domain_dict(
+            number_of_super_areas=n_super_areas, number_of_domains=self.mpi_size
+        )
         domain = Domain.from_hdf5(
             domain_id=self.mpi_rank,
             super_areas_to_domain_dict=super_areas_to_domain_dict,
@@ -311,9 +319,9 @@ class Runner:
         return policies
 
     def generate_infection_seed(
-        self, domain, simulator, 
+        self, domain, simulator,
     ):
-        #TODO adapt to use infection_seed
+        # TODO adapt to use infection_seed
         # infection seed
         if self.mpi_rank == 0:
             with h5py.File(self.paths_configuration["world_path"], "r") as f:
@@ -322,45 +330,45 @@ class Runner:
             selected_ids = np.random.choice(population_ids, n_cases, replace=False)
             for rank_receiving in range(1, self.mpi_size):
                 self.mpi_comm.send(selected_ids, dest=rank_receiving, tag=0)
-        
+
         elif self.mpi_rank > 0:
             selected_ids = self.mpi_comm.recv(source=0, tag=0)
         for inf_id in selected_ids:
             if inf_id in domain.people.people_dict:
                 person = domain.people.get_from_id(inf_id)
                 simulator.infection_selector.infect_person_at_time(person, 0.0)
-        #if "seed_strength" in parameters_dict:
+        # if "seed_strength" in parameters_dict:
         #    seed_strength = parameters_dict["seed_strength"]
         #    verbose_print(f"set seed strength {seed_strength:.3f}", verbose=verbose)
-        #else:
+        # else:
         #    seed_strength = default_values["seed_strength"]
         #    verbose_print(
         #        f"no seed strength; default {seed_strength:.3f}", verbose=verbose
         #    )
-        #if "age_profile" in parameters_dict:
+        # if "age_profile" in parameters_dict:
         #    age_profile = parameters_dict["age_profile"]
         #    print(f"doing something with age_profile", age_profile)
-        #else:
+        # else:
         #    verbose_print(f"no age_profile", verbose=verbose)
-        #oc = Observed2Cases.from_file(
+        # oc = Observed2Cases.from_file(
         #    super_areas=world.super_areas,
         #    health_index=infection_selector.health_index_generator,
-        #)
-        #n_cases_df = oc.cases_from_deaths()
+        # )
+        # n_cases_df = oc.cases_from_deaths()
         ## Seed over 2 days
-        #n_cases_to_seed_df = n_cases_df.loc["2020-02-28":"2020-03-02"]
-        #infection_seed = InfectionSeed.from_file(
+        # n_cases_to_seed_df = n_cases_df.loc["2020-02-28":"2020-03-02"]
+        # infection_seed = InfectionSeed.from_file(
         #    super_areas=world.super_areas,
         #    selector=infection_selector,
         #    n_cases_region=n_cases_to_seed_df,
         #    seed_strength=seed_strength,
-        #)
-        #print("\n\n infection seed\n")
-        #print(infection_seed.__dict__)
-        #return infection_seed
+        # )
+        # print("\n\n infection seed\n")
+        # print(infection_seed.__dict__)
+        # return infection_seed
 
     def generate_logger(self, save_path: str):
-        logger = Logger(save_path = save_path, file_name=f"logger.{self.mpi_rank}.hdf5")
+        logger = Logger(save_path=save_path, file_name=f"logger.{self.mpi_rank}.hdf5")
         return logger
 
     def get_index_to_run(self, parameter_index):
@@ -407,14 +415,16 @@ class Runner:
             config_filename=self.paths_configuration["config_path"],
             leisure=leisure,
             travel=travel,
-            infection_seed=None, #TODO
+            infection_seed=None,  # TODO
             infection_selector=infection_selector,
             policies=policies,
-            logger = logger,
-            #comment=self.comment,#TODO: move this to logger
+            logger=logger,
+            # comment=self.comment,#TODO: move this to logger
         )
         # TODO: fully adapt this to parallel
-        infection_seed = self.generate_infection_seed(domain=domain, simulator=simulator)
+        infection_seed = self.generate_infection_seed(
+            domain=domain, simulator=simulator
+        )
         return simulator
 
     # @staticmethod # Can't decide, static or not - would be helpful to call as static for failed loggers...

@@ -141,7 +141,7 @@ class SlurmScriptMaker:
                 f"module load gnu_comp/7.3.0",
                 f"module load hdf5",
                 f"module load openmpi/3.0.1",
-                f"module load gnu-parallel"
+                f"module load gnu-parallel",
             ]
         else:
             raise ValueError(f"System {self.system} is not supported")
@@ -167,8 +167,10 @@ class SlurmScriptMaker:
         ]
 
         parallel_cmd = f"parallel -u --delay .2 -j {index_high-index_low+1}"
-        python_cmd = f"\"mpirun -np {self.cores_per_job} python3 -u {self.runner_path.absolute()} {self.config_path.absolute()} {{1}}\"" 
-        full_cmd = [parallel_cmd + " " + python_cmd + f" ::: {{{index_low}..{index_high}}}"]
+        python_cmd = f'"mpirun -np {self.cores_per_job} python3 -u {self.runner_path.absolute()} {self.config_path.absolute()} {{1}}"'
+        full_cmd = [
+            parallel_cmd + " " + python_cmd + f" ::: {{{index_low}..{index_high}}}"
+        ]
         script_lines = slurm_header + email_lines + loading_python + full_cmd
         return script_lines
 
