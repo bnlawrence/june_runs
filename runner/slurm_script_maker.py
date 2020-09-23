@@ -7,9 +7,15 @@ from sklearn.model_selection import ParameterGrid
 
 from .utils import parse_paths, config_checks, git_checks, copy_data
 
-queue_to_max_cpus = {"cosma": 16, "cosma6": 16, "cosma7": 28, "jasmin": 20, "cosma-prince" : 16}
+queue_to_max_cpus = {
+    "cosma": 16,
+    "cosma6": 16,
+    "cosma7": 28,
+    "jasmin": 20,
+    "cosma-prince": 16,
+}
 default_parallel_tasks_path = (
-    Path(__file__).parent.parent / "parallel_tasks/parallel_tasks"
+    Path(__file__).parent.parent / "parallel_tasks/build/parallel_tasks"
 )
 default_run_simulation_script = Path(__file__).parent.parent / "run_simulation.py"
 default_config_path = Path(__file__).parent.parent / "run_configs/config_example.yaml"
@@ -19,6 +25,7 @@ class SlurmScriptMaker:
     def __init__(
         self,
         config_path=default_config_path,
+        cores_per_job=4,
         jobs_per_node=4,
         system="cosma",
         queue="cosma",
@@ -37,6 +44,7 @@ class SlurmScriptMaker:
         runner_path=default_run_simulation_script,
     ):
         self.region = region
+        self.cores_per_job = cores_per_job
         self.jobs_per_node = jobs_per_node
         self.system = system
         self.queue = queue
@@ -45,8 +53,8 @@ class SlurmScriptMaker:
         self.email_address = email_address
         self.iteration = iteration
         self.max_time = max_time
-        self.parameters_to_run = parameters_to_run 
-        self.num_runs = len(self.parameters_to_run) 
+        self.parameters_to_run = parameters_to_run
+        self.num_runs = len(self.parameters_to_run)
         self.max_cpus_per_node = queue_to_max_cpus[queue]
         self.parallel_tasks_path = Path(parallel_tasks_path)
         self.runner_path = Path(runner_path)
@@ -84,10 +92,11 @@ class SlurmScriptMaker:
         else:
             run_script = system_configuration["runner_path"]
         if "jobname" in system_configuration:
-            jobname = system_configuration["jobname"]            
+            jobname = system_configuration["jobname"]
         else:
             jobname = None
         jobs_per_node = system_configuration["jobs_per_node"]
+        cores_per_job = system_configuration["cores_per_job"]
         region = config["region"]
         iteration = config["iteration"]
         paths = parse_paths(
@@ -97,6 +106,7 @@ class SlurmScriptMaker:
         return cls(
             config_path=config_path,
             jobs_per_node=jobs_per_node,
+            cores_per_job=cores_per_job,
             system=system,
             queue=queue,
             max_time=max_time,
@@ -110,9 +120,9 @@ class SlurmScriptMaker:
             parameters_to_run=parameters_to_run,
             output_path=paths["results_path"],
             stdout_path=paths["stdout_path"],
-            jobname = jobname
+            jobname=jobname,
         )
-    
+
     def make_script_lines(self, script_number, index_low, index_high):
         stdout_name = (
             self.stdout_dir / f"{self.region}_{self.iteration}_{script_number:03d}"
@@ -137,42 +147,41 @@ class SlurmScriptMaker:
         if (self.email_notifications) and (self.email_address is not None):
             email_lines = [
                 f"#SBATCH --mail-type=BEGIN,END",
-                f"#SBATCH --mail-user={self.email_address}"
+                f"#SBATCH --mail-user={self.email_address}",
             ]
         else:
             email_lines = []
-                
-        python_cmd = f"python3 -u {self.runner_path.absolute()} {self.config_path.absolute()} -i %d "
 
-        script_lines = (
-            [
-                "#!/bin/bash -l",
-                "",
-                f"#SBATCH --ntasks {self.max_cpus_per_node}",
-                f"#SBATCH -J {self.jobname}_{self.iteration}_{script_number:03d}",
-                f"#SBATCH -o {stdout_name}.out",
-                f"#SBATCH -e {stdout_name}.err",
-                f"#SBATCH -p {self.queue}",
-                f"#SBATCH -A {self.account}",
-                f"#SBATCH --exclusive",
-                f"#SBATCH -t {self.max_time}",
-            ]
-            + email_lines
-            + loading_python
-            + [
-                f'mpirun -np {index_high-index_low+1} {self.parallel_tasks_path.absolute()} {index_low} {index_high} "{python_cmd}"',
-            ]
-        )
+        slurm_header = [
+            "#!/bin/bash -l",
+            "",
+            f"#SBATCH --ntasks {self.max_cpus_per_node}",
+            f"#SBATCH -J {self.jobname}_{self.iteration}_{script_number:03d}",
+            f"#SBATCH -o {stdout_name}.out",
+            f"#SBATCH -e {stdout_name}.err",
+            f"#SBATCH -p {self.queue}",
+            f"#SBATCH -A {self.account}",
+            f"#SBATCH --exclusive",
+            f"#SBATCH -t {self.max_time}",
+        ]
+
+        python_cmd = f"mpirun -np {self.cores_per_job} python3 -u {self.runner_path.absolute()} {self.config_path.absolute()} -i %d "
+        full_cmd = [f'mpirun -np {index_high-index_low+1} {self.parallel_tasks_path.absolute()} {index_low} {index_high} "{python_cmd}"']
+        script_lines = slurm_header + email_lines + loading_python + full_cmd
         return script_lines
 
     def make_scripts(self):
         script_dir = self.output_path / "slurm_scripts"
         script_dir.mkdir(exist_ok=True, parents=True)
-        number_of_scripts = int(np.ceil(len(self.parameters_to_run)/ self.jobs_per_node))
+        number_of_scripts = int(
+            np.ceil(len(self.parameters_to_run) / self.jobs_per_node)
+        )
         script_names = []
         for i in range(number_of_scripts):
             idx1 = i * self.jobs_per_node
-            idx2 = min((i + 1) * self.jobs_per_node - 1, len(self.parameters_to_run) - 1) 
+            idx2 = min(
+                (i + 1) * self.jobs_per_node - 1, len(self.parameters_to_run) - 1
+            )
             script_lines = self.make_script_lines(
                 script_number=i, index_low=idx1, index_high=idx2
             )
@@ -186,7 +195,7 @@ class SlurmScriptMaker:
         submit_scripts_path = self.output_path / "submit_scripts.sh"
         with open(submit_scripts_path, "w") as f:
             f.write("#!/bin/bash" + "\n\n")
-            for i,script_name in enumerate(script_names):
+            for i, script_name in enumerate(script_names):
                 line = f"sbatch {script_name.absolute()}"
                 f.write(line + "\n")
                 if i == 0:
@@ -194,13 +203,13 @@ class SlurmScriptMaker:
                         print_path = script_name.relative_to(Path.cwd())
                     except:
                         print_path = script_name
-                    print(f'scripts written to eg.:\n    {print_path}\n')
+                    print(f"scripts written to eg.:\n    {print_path}\n")
 
         try:
             print_path = submit_scripts_path.relative_to(Path.cwd())
         except:
             print_path = submit_scripts_path
-        print(f'submit all_scripts with:\n    \033[35mbash {print_path}\033[0m')
+        print(f"submit all_scripts with:\n    \033[35mbash {print_path}\033[0m")
 
 
 if __name__ == "__main__":

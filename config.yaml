@@ -1,10 +1,10 @@
 title: Covid configuration example
 
-activity_to_groups:
+activity_to_super_groups:
   primary_activity: ['schools', 'companies', "universities"]
   leisure: ['pubs', 'cinemas', 'groceries', "care_home_visits", "household_visits"] 
   residence: ['households', 'care_homes']
-  commute: ['commuteunits', 'commutecityunits']
+  travel: ['city_transports', 'inter_city_transports']
   medical_facility: ['hospitals']
 
 time:

@@ -7,6 +7,7 @@ import time
 import psutil
 import numba as nb
 import random
+from mpi4py import MPI
 
 from pathlib import Path
 from collections import OrderedDict, defaultdict
@@ -15,6 +16,7 @@ from june.interaction import Interaction
 from june.infection.health_index import HealthIndexGenerator
 from june.infection.transmission import TransmissionConstant
 from june.groups.leisure import generate_leisure_for_config, Cinemas, Pubs, Groceries
+from june.groups.travel import Travel
 from june.simulator import Simulator
 from june.infection_seed import InfectionSeed, Observed2Cases
 from june.policy import Policy, Policies, SocialDistancing, Quarantine
@@ -22,9 +24,11 @@ from june.infection import InfectionSelector
 from june.hdf5_savers import generate_world_from_hdf5
 from june import paths
 from june.logger.read_logger import ReadLogger
+from june.domain import Domain, generate_super_areas_to_domain_dict
+from june.logger import Logger
 
 from .parameter_generator import ParameterGenerator
-from .extract_data_new import *
+from .extract_data_new import save_regional_summaries, save_age_summaries, save_world_summaries, save_hospital_summary, save_infection_locations
 from .plotter import Plotter
 from .utils import parse_paths, config_checks, git_checks, verbose_print, memory_status
 
@@ -37,6 +41,7 @@ default_values = {
     "lockdown_ratio": 0.5,
     "seed_strength": 1.0,
 }
+
 
 def set_random_seed(seed=999):
     """
@@ -75,7 +80,13 @@ class Runner:
     ):
         # fix seed before everything for reproducibility
         # TODO: save this to the logger or wherever
-        if "random_seed" not in parameter_configuration or parameter_configuration["random_seed"] == "random":
+        self.mpi_comm = MPI.COMM_WORLD
+        self.mpi_rank = self.mpi_comm.Get_rank()
+        self.mpi_size = self.mpi_comm.Get_size()
+        if (
+            "random_seed" not in parameter_configuration
+            or parameter_configuration["random_seed"] == "random"
+        ):
             random_seed = random.randint(0, 1_000_000_000)
             print(f"Random seed set to a random value ({random_seed})")
         else:
@@ -102,25 +113,33 @@ class Runner:
                 processed_parameters,
                 n_samples=parameter_configuration["number_of_samples"],
                 parameters_to_run=parameter_configuration["parameters_to_run"],
-                parameters_to_fix=parameter_configuration.get('parameters_to_fix',None)
+                parameters_to_fix=parameter_configuration.get(
+                    "parameters_to_fix", None
+                ),
             )
         elif parameter_configuration.get("config_type", None) == "grid":
             self.parameter_generator = ParameterGenerator.from_grid(
                 processed_parameters,
                 parameters_to_run=parameter_configuration["parameters_to_run"],
-                parameters_to_fix=parameter_configuration.get('parameters_to_fix', None)
+                parameters_to_fix=parameter_configuration.get(
+                    "parameters_to_fix", None
+                ),
             )
         elif parameter_configuration.get("config_type", None) == "regular_grid":
             self.parameter_generator = ParameterGenerator.from_regular_grid(
                 processed_parameters,
                 parameters_to_run=parameter_configuration["parameters_to_run"],
-                parameters_to_fix=parameter_configuration.get('parameters_to_fix', None)
+                parameters_to_fix=parameter_configuration.get(
+                    "parameters_to_fix", None
+                ),
             )
         elif parameter_configuration.get("config_type", None) == "file":
             self.parameter_generator = ParameterGenerator.from_file(
-                parameter_configuration['parameters_to_vary']['path'],
+                parameter_configuration["parameters_to_vary"]["path"],
                 parameters_to_run=parameter_configuration["parameters_to_run"],
-                parameters_to_fix=parameter_configuration.get('parameters_to_fix', None)
+                parameters_to_fix=parameter_configuration.get(
+                    "parameters_to_fix", None
+                ),
             )
         else:
             raise NotImplementedError
@@ -157,9 +176,17 @@ class Runner:
                 parameter_dict[parameter_type] = parameter_values
         return parameter_dict
 
-    def generate_world(self):
-        world = generate_world_from_hdf5(self.paths_configuration["world_path"])
-        return world
+    def generate_domain(self):
+        """
+        Given the current mpi rank, generates a split of the world (domain) from an hdf5 world.
+        If mpi_size is 1 this will return the entire world.
+        """
+        domain = Domain.from_hdf5(
+            domain_id=self.mpi_rank,
+            super_areas_to_domain_dict=self.super_areas_to_domain_dict,
+            hdf5_file_path=self.paths_configuration["world_path"],
+        )
+        return domain
 
     def generate_health_index_generator(self, parameters_dict, verbose=False):
         if "asymptomatic_ratio" in parameters_dict:
@@ -203,6 +230,16 @@ class Runner:
             if beta_parameter_name in parameters_dict:
                 interaction.beta[beta] = parameters_dict[beta_parameter_name]
         return interaction
+
+    def generate_leisure(self, domain: Domain):
+        leisure = generate_leisure_for_config(
+            domain, self.paths_configuration["config_path"]
+        )
+        return leisure
+
+    def generate_travel(self):
+        travel = Travel()
+        return travel
 
     def generate_policies(self, parameters_dict, verbose=False):
         policies = Policies.from_file()
@@ -297,9 +334,13 @@ class Runner:
             n_cases_region=n_cases_to_seed_df,
             seed_strength=seed_strength,
         )
-        print('\n\n infection seed\n')
+        print("\n\n infection seed\n")
         print(infection_seed.__dict__)
         return infection_seed
+
+    def generate_logger(self, save_path: str):
+        logger = Logger(save_path = save_path, file_name=f"logger.{self.mpi_rank}.hdf5")
+        return logger
 
     def get_index_to_run(self, parameter_index):
         index_to_run = self.parameter_generator.parameters_to_run[parameter_index]
@@ -331,26 +372,30 @@ class Runner:
         infection_selector = self.generate_infection_selector(health_index_generator)
         interaction = self.generate_interaction(parameters_dict)
         print("\n\ninteraction:\n", interaction.__dict__, "\n\n")
+        leisure = self.generate_leisure(domain=domain)
+        travel = self.generate_travel(domain=domain)
         policies = self.generate_policies(parameters_dict)
         verbose_print(memory_status(when="before world"), verbose=verbose)  #
-        world = self.generate_world()
+        domain = self.generate_domain()
         verbose_print(memory_status(when="after world"), verbose=verbose)  #
+        # TODO: adapt this to parallel
         infection_seed = self.generate_infection_seed(
-            parameters_dict, infection_selector, world
+            parameters_dict, infection_selector, domain 
         )
-        leisure = generate_leisure_for_config(
-            world, self.paths_configuration["config_path"]
-        )
+        # TODO: put comment into logger here (and save path) to not clog simulator
+        logger = self.generate_logger()
         print("Comment is...", self.comment)
         simulator = Simulator.from_file(
-            world=world,
+            world=domain,
             interaction=interaction,
             config_filename=self.paths_configuration["config_path"],
             leisure=leisure,
+            travel=travel,
             infection_seed=infection_seed,
             infection_selector=infection_selector,
             policies=policies,
             save_path=save_path,
+            logger = logger,
             comment=self.comment,
         )
         return simulator
