@@ -66,6 +66,7 @@ class Runner:
         comment: str = None,
         system_configuration: dict = None,
         paths_configuration: dict = None,
+        checkpoint_configuration: dict = None,
         infection_configuration: dict = None,
         region_configuration: dict = None,
         parameter_configuration: dict = None,
@@ -90,6 +91,7 @@ class Runner:
         self.paths_configuration = parse_paths(
             paths_configuration, region=region, iteration=iteration
         )
+        self.checkpoint_configuration = checkpoint_configuration
         self.infection_configuration = infection_configuration
         self.region_configuration = region_configuration
         self.parameter_configuration = parameter_configuration
@@ -359,7 +361,6 @@ class Runner:
     def extract_summaries(
         self, parameter_index=None, logger_dir=None, summary_dir=None, verbose=False
     ):
-
         if parameter_index is not None:
             index_to_run = self.get_index_to_run(parameter_index)
             run_name = f"run_{parameter_index:03}"
@@ -369,7 +370,7 @@ class Runner:
 
         if summary_dir is None:
             summary_dir = self.paths_configuration["summary_path"]
-
+        print(f"Reading from {logger_dir}")
         t1 = time.time()
         try:
             logger = ReadLogger(logger_dir)
