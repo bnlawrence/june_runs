@@ -255,7 +255,10 @@ class Runner:
         return travel
 
     def generate_policies(self, parameters_dict, verbose=False):
-        policies = Policies.from_file()
+        if 'policy_path' in self.policy_configuration:
+            policies = Policies.from_file(config_file=self.policy_configuration['policy_path'])
+        else:
+            policies = Policies.from_file()
         policies_to_modify = defaultdict(list)
         policy_types = set()
         if "lockdown_ratio" in self.policy_configuration:
