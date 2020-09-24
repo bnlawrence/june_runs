@@ -152,11 +152,11 @@ class SlurmScriptMaker:
             ]
         else:
             email_lines = []
-
+        ntasks = max(self.max_cpus_per_node, self.cores_per_job)
         slurm_header = [
             "#!/bin/bash -l",
             "",
-            f"#SBATCH --ntasks {self.max_cpus_per_node}",
+            f"#SBATCH --ntasks {ntasks}",
             f"#SBATCH -J {self.jobname}_{self.iteration}_{script_number:03d}",
             f"#SBATCH -o {stdout_name}.out",
             f"#SBATCH -e {stdout_name}.err",
