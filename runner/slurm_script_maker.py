@@ -167,7 +167,7 @@ class SlurmScriptMaker:
         ]
 
         parallel_cmd = f"parallel -u --delay .2 -j {index_high-index_low+1}"
-        python_cmd = f'"mpirun -np {self.cores_per_job} python3 -u {self.runner_path.absolute()} {self.config_path.absolute()} {{1}}"'
+        python_cmd = f'"mpirun -np {self.cores_per_job} python3 -u {self.runner_path.absolute()} {self.config_path.absolute()} -i {{1}}"'
         full_cmd = [
             parallel_cmd + " " + python_cmd + f" ::: {{{index_low}..{index_high}}}"
         ]
