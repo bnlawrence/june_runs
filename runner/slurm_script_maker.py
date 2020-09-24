@@ -142,6 +142,7 @@ class SlurmScriptMaker:
                 f"module load hdf5",
                 f"module load openmpi/3.0.1",
                 f"module load gnu-parallel",
+                f"source /cosma6/data/dp004/dc-cues1/june_env/bin/activate",
             ]
         else:
             raise ValueError(f"System {self.system} is not supported")
@@ -167,7 +168,7 @@ class SlurmScriptMaker:
         ]
 
         parallel_cmd = f"parallel -u --delay .2 -j {index_high-index_low+1}"
-        python_cmd = f'"mpirun -np {self.cores_per_job} python3 -u {self.runner_path.absolute()} {self.config_path.absolute()} {{1}}"'
+        python_cmd = f'"mpirun -np {self.cores_per_job} python3 -u {self.runner_path.absolute()} {self.config_path.absolute()} -i {{1}}"'
         full_cmd = [
             parallel_cmd + " " + python_cmd + f" ::: {{{index_low}..{index_high}}}"
         ]

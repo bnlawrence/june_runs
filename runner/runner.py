@@ -395,10 +395,10 @@ class Runner:
         verbose_print(memory_status(when="after world"), verbose=verbose)  #
         # TODO: put comment into logger here (and save path) to not clog simulator
         logger = self.generate_logger(save_path=save_path)
+        logger.log_population(domain.people)
         infection_seed = self.generate_infection_seed(
             parameters_dict=parameters_dict, domain=domain, infection_selector=infection_selector
         )
-
         print("Comment is...", self.comment)
         simulator = Simulator.from_file(
             world=domain,
