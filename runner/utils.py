@@ -2,6 +2,7 @@ import sys
 import psutil
 import shutil
 import os
+import yaml
 import subprocess
 
 from pathlib import Path
@@ -45,7 +46,31 @@ def parse_paths(paths_configuration, region, iteration):
     ret["summary_path"].mkdir(exist_ok=True, parents=True)
 
     return ret
-    
+
+def parse_extra_paths(extra_config,parsed_paths,runner_variables={},verbose=False):
+    if extra_config is None:
+        return None
+    for key,value in extra_config.items():
+        if type(value) is dict:
+            parse_extra_paths(value,parsed_paths,runner_variables)
+        if key.endswith('path'):
+            value_split = value.split('/')
+            reconstructed = []
+            for split in value_split:
+                if "@" in split:
+                    placeholder_name = split[1:]
+                    reconstructed.append(parsed_paths[placeholder_name].as_posix())
+                elif "{" in split and "}" in split:
+                    print("modding",split)
+                    split = split.format(**runner_variables)
+                    print("now",split)
+                    reconstructed.append(split)
+                else:
+                    reconstructed.append(split)
+            reconstructed = "/".join(reconstructed)
+            extra_config[key] = Path(reconstructed)
+        
+    verbose_print("modified config to", extra_config,verbose=verbose)
 
 def verbose_print(*args,verbose=False):
     if verbose:
@@ -67,6 +92,10 @@ def config_checks(config):
         region=config["region"], 
         iteration=config["iteration"]
     )
+    sim_config_path = paths["config_path"]
+    with open(sim_config_path, "r") as f:
+        sim_config = yaml.load(f, Loader=yaml.FullLoader)
+
     wp = paths["world_path"].stem
     if config["region"] not in paths["world_path"].stem:
         print(check,"Have you set the world_path or region in config correctly?")
@@ -76,6 +105,12 @@ def config_checks(config):
             "parameters_to_run"
         ) not in [None, "all"]:
             print(check,"are you sure you don't want \"all\" parameters_to_run?")
+    if config["checkpoint_configuration"] is not None:
+        run_config_checkpoint_date = config["checkpoint_configuration"].get("checkpoint_date")
+        sim_initial_date = sim_config["time"].get("initial_day")
+        if run_config_checkpoint_date != sim_initial_date:
+            print(check, "sim config initial_date {sim_initial_date} NOT equal to run config checkpoint_date {run_config_checkpoint_date}")
+
     return None
 
 def git_checks():

@@ -26,7 +26,7 @@ from june.logger.read_logger import ReadLogger
 from .parameter_generator import ParameterGenerator
 from .extract_data_new import *
 from .plotter import Plotter
-from .utils import parse_paths, config_checks, git_checks, verbose_print, memory_status
+from .utils import parse_paths, parse_extra_paths, config_checks, git_checks, verbose_print, memory_status
 
 default_config_file = Path(__file__).parent.parent / "run_configs/config_example.yaml"
 
@@ -91,7 +91,7 @@ class Runner:
         self.paths_configuration = parse_paths(
             paths_configuration, region=region, iteration=iteration
         )
-        self.checkpoint_configuration = checkpoint_configuration
+
         self.infection_configuration = infection_configuration
         self.region_configuration = region_configuration
         self.parameter_configuration = parameter_configuration
@@ -128,6 +128,13 @@ class Runner:
             raise NotImplementedError
         self.summary_configuration = summary_configuration
         self.verbose = system_configuration["verbose"]
+
+        self.checkpoint_configuration = checkpoint_configuration
+        self.from_checkpoint = False # default set this as FALSE.
+        if checkpoint_configuration is not None:
+            if self.checkpoint_configuration["from_checkpoint"]:
+                self.from_checkpoint = True
+                self.checkpoint_date = checkpoint_configuration["checkpoint_date"]
 
     @classmethod
     def from_file(cls, config_path: str = default_config_file):
@@ -311,6 +318,7 @@ class Runner:
         print("Running with config: \n")
         print("sys config", self.system_configuration)
         print("path config", self.paths_configuration)
+        print("chkpt config", self.checkpoint_configuration)
         print("inf config", self.infection_configuration)
         print("region config", self.region_configuration)
         print("param config", self.parameter_configuration)
@@ -323,7 +331,21 @@ class Runner:
         run_number = parameters_dict["run_number"]
         verbose_print(
             f"Run number {run_number} params:", parameters_dict, verbose=verbose
-        )  #
+        )
+        self.index_to_run = self.get_index_to_run(parameter_index)
+
+        parse_extra_paths(
+            self.checkpoint_configuration,
+            self.paths_configuration,
+            self.__dict__,
+            verbose=verbose
+        )
+        if self.from_checkpoint:
+            checkpoint_path = self.checkpoint_configuration["checkpoint_path"]
+            if checkpoint_path.exists() is False:
+                print(f"No checkpoint_path {checkpoint_path}. Exit.")
+                sys.exit()
+            
         run_name = f"run_{run_number:03}"
         save_path = self.paths_configuration["results_path"] / run_name
         save_path.mkdir(exist_ok=True, parents=True)
@@ -332,7 +354,7 @@ class Runner:
         health_index_generator = self.generate_health_index_generator(parameters_dict)
         infection_selector = self.generate_infection_selector(health_index_generator)
         interaction = self.generate_interaction(parameters_dict)
-        print("\n\ninteraction:\n", interaction.__dict__, "\n\n")
+        print("\n\ninteraction:\n", interaction.__dict__["beta"], "\n\n")
         policies = self.generate_policies(parameters_dict)
         verbose_print(memory_status(when="before world"), verbose=verbose)  #
         world = self.generate_world()
@@ -344,17 +366,23 @@ class Runner:
             world, self.paths_configuration["config_path"]
         )
         print("Comment is...", self.comment)
-        simulator = Simulator.from_file(
-            world=world,
-            interaction=interaction,
-            config_filename=self.paths_configuration["config_path"],
-            leisure=leisure,
-            infection_seed=infection_seed,
-            infection_selector=infection_selector,
-            policies=policies,
-            save_path=save_path,
-            comment=self.comment,
-        )
+        simulator_kwargs = {
+            "world" : world,
+            "interaction" : interaction,
+            "config_filename" : self.paths_configuration["config_path"],
+            "leisure" : leisure,
+            "infection_seed" : infection_seed,
+            "infection_selector" : infection_selector,
+            "policies" : policies,
+            "save_path" : save_path,
+            "comment" : self.comment
+        }
+
+        if self.from_checkpoint is False:
+            simulator = Simulator.from_file(**simulator_kwargs)
+        else:
+            simulator_kwargs["checkpoint_path"] = checkpoint_path
+            simulator = Simulator.from_checkpoint(**simulator_kwargs)
         return simulator
 
     # @staticmethod # Can't decide, static or not - would be helpful to call as static for failed loggers...
