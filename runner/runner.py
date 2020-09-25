@@ -116,6 +116,7 @@ class Runner:
         processed_parameters = self._read_parameter_configuration(
             parameter_configuration["parameters_to_vary"]
         )
+        print('parameter configuration = ', parameter_configuration['parameters_to_run'])
         if parameter_configuration.get("config_type", None) == "latin_hypercube":
             self.parameter_generator = ParameterGenerator.from_latin_hypercube(
                 processed_parameters,
@@ -419,13 +420,14 @@ class Runner:
 
     # @staticmethod # Can't decide, static or not - would be helpful to call as static for failed loggers...
     def extract_summaries(
-        self, parameter_index=None, logger_dir=None, summary_dir=None, verbose=False
+        self, n_processes, parameter_index=None, logger_dir=None, summary_dir=None, verbose=False
     ):
 
         if parameter_index is not None:
             index_to_run = self.get_index_to_run(parameter_index)
             run_name = f"run_{parameter_index:03}"
 
+        print('index to run = ', index_to_run)
         if logger_dir is None:
             logger_dir = self.paths_configuration["results_path"] / run_name
 
@@ -434,8 +436,8 @@ class Runner:
 
         t1 = time.time()
         try:
-            logger = ReadLogger(logger_dir)
-            logger.load_infection_location()
+            logger = ReadLogger(logger_dir, root_output_file='logger',n_processes=n_processes)
+            logger.load_infection_location(n_processes)
         except Exception as e:
             print(str(e))
             l1 = "***" + 19 * " " + "***"
