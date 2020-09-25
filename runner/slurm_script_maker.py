@@ -48,6 +48,7 @@ class SlurmScriptMaker:
         nodes_per_job=1,
         mpi_cmd="mpirun",
         use_jobarray=False,
+        extra_batch_headers=[],
     ):
         self.region = region
         self.cores_per_job = cores_per_job
@@ -80,7 +81,7 @@ class SlurmScriptMaker:
         self.nodes_per_job = nodes_per_job
         self.mpi_cmd = mpi_cmd
         self.use_jobarray = use_jobarray
-
+        self.extra_batch_headers = extra_batch_headers
     @classmethod
     def from_file(cls, parameters_to_run, config_path: str = default_config_path):
         with open(config_path, "r") as f:
@@ -124,6 +125,8 @@ class SlurmScriptMaker:
         relative_paths = system in ['archer', 'jasmin']
         python = system_configuration['python']
         mpi_cmd = system_configuration['mpi_cmd']
+        extra_batch_headers = system_configuration['extra_batch_headers']
+
         return cls(
             config_path=config_path,
             jobs_per_node=jobs_per_node,
@@ -147,6 +150,7 @@ class SlurmScriptMaker:
             nodes_per_job=nodes_per_job,
             mpi_cmd=mpi_cmd,
             use_jobarray=use_jobarray,
+            extra_batch_headers=extra_batch_headers,
         )
 
     def make_script_lines(self, script_number, index_low, index_high):
@@ -190,7 +194,7 @@ class SlurmScriptMaker:
             f"#SBATCH -A {self.account}",
             f"#SBATCH --exclusive",
             f"#SBATCH -t {self.max_time}",
-        ]
+        ] + self.extra_batch_headers
 
         if self.nodes_per_job > 1:
             if self.use_jobarray:

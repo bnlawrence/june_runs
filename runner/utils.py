@@ -19,6 +19,7 @@ def parse_paths(paths_configuration, region, iteration):
     names_without_placeholder = [
         key for key, value in paths_configuration.items() if "@" not in value
     ]
+
     for name in names_without_placeholder:
         ret[name] = Path(paths_configuration[name])
     if names_with_placeholder:
