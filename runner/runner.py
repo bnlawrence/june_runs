@@ -425,9 +425,8 @@ class Runner:
 
         if parameter_index is not None:
             index_to_run = self.get_index_to_run(parameter_index)
-            run_name = f"run_{parameter_index:03}"
+            run_name = f"run_{index_to_run:03}"
 
-        print('index to run = ', index_to_run)
         if logger_dir is None:
             logger_dir = self.paths_configuration["results_path"] / run_name
 
