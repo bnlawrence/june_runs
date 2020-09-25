@@ -10,7 +10,7 @@ import matplotlib.backends.backend_pdf
 
 import time
  
-plt.style.use(['science', 'notebook'])
+#plt.style.use(['science', 'notebook'])
 plt.style.reload_library()
 
 from june.logger.read_logger import ReadLogger
