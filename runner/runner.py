@@ -435,8 +435,8 @@ class Runner:
 
             t1 = time.time()
             try:
-                logger = ReadLogger(logger_dir, root_output_file='logger',n_processes=n_processes)
-                logger.load_infection_location()
+                read = ReadLogger(logger_dir, root_output_file='logger',n_processes=n_processes)
+                read.load_infection_location()
             except Exception as e:
                 print(str(e))
                 l1 = "***" + 19 * " " + "***"
@@ -450,20 +450,26 @@ class Runner:
             daily_regional_path = (
                 summary_dir / f"daily_regional_summary_{index_to_run:03}.csv"
             )
-            save_regional_summaries(logger, run_summary_path, daily_regional_path)
+            regions = read.region_summary()
+            regions.to_csv(daily_regional_path)
+            #save_regional_summaries(logger, run_summary_path, daily_regional_path)
 
             world_path = summary_dir / f"world_summary_{index_to_run:03}.csv"
             daily_world_path = summary_dir / f"daily_world_summary_{index_to_run:03}.csv"
-            save_world_summaries(logger, world_path, daily_world_path)
+            world_df = read.world_summary()
+            world_df.to_csv(world_path)
+            #save_world_summaries(logger, world_path, daily_world_path)
 
             if self.summary_configuration:
                 age_bins = self.summary_configuration["age_bins"]
             else:
                 age_bins = None
+            ages_df = read.age_summary(age_bins)
 
             age_path = summary_dir / f"age_summary_{parameter_index:03}.csv"
             daily_age_path = summary_dir / f"daily_age_summary_{index_to_run:03}.csv"
-            save_age_summaries(logger, age_path, daily_age_path, age_bins=age_bins)
+            ages_df.to_csv(age_path)
+            #save_age_summaries(logger, age_path, daily_age_path, age_bins=age_bins)
 
             infection_locations_path = (
                 summary_dir / f"total_infection_locations_{index_to_run:03}.csv"
@@ -471,11 +477,14 @@ class Runner:
             daily_loc_ts_path = (
                 summary_dir / f"daily_infection_loc_timeseries_{index_to_run:03}.csv"
             )
-            save_infection_locations(logger, infection_locations_path, daily_loc_ts_path)
+            #save_infection_locations(logger, infection_locations_path, daily_loc_ts_path)
+            read.locations_df.to_csv(daily_loc_ts_path)
 
             real_data_path = Path("/cosma5/data/durham/dc-truo1/june_analysis")
+            '''
             plotter = Plotter(logger, real_data_path, summary_dir, parameter_index)
             plotter.plot_region_data()
             plotter.plot_age_stratified(sitrep_bins=False)
             plotter.plot_age_stratified(sitrep_bins=True)
+            '''
             return None
