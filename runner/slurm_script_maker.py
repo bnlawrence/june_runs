@@ -11,7 +11,8 @@ queue_to_max_cpus = {
     "cosma": 16,
     "cosma6": 16,
     "cosma7": 28,
-    "jasmin": 20,
+    "jasmin/covid_june": 20,
+    "archer/standard": 20,
     "cosma-prince": 16,
 }
 default_parallel_tasks_path = (
@@ -42,6 +43,11 @@ class SlurmScriptMaker:
         jobname=None,
         parallel_tasks_path=default_parallel_tasks_path,
         runner_path=default_run_simulation_script,
+        relative_paths=False,
+        python=None,
+        nodes_per_job=1,
+        mpi_cmd="mpirun",
+        use_jobarray=False,
     ):
         self.region = region
         self.cores_per_job = cores_per_job
@@ -69,6 +75,11 @@ class SlurmScriptMaker:
         else:
             self.jobname = jobname
         self.stdout_dir.mkdir(parents=True, exist_ok=True)
+        self.relative_paths = relative_paths
+        self.python = python
+        self.nodes_per_job = nodes_per_job
+        self.mpi_cmd = mpi_cmd
+        self.use_jobarray = use_jobarray
 
     @classmethod
     def from_file(cls, parameters_to_run, config_path: str = default_config_path):
@@ -96,6 +107,13 @@ class SlurmScriptMaker:
         else:
             jobname = None
         jobs_per_node = system_configuration["jobs_per_node"]
+        nodes_per_job = system_configuration["nodes_per_job"]
+        use_jobarray = system_configuration["use_jobarray"]
+
+        # sanity check ... not sure this is the right sanity check yet.
+        assert jobs_per_node == 0 or nodes_per_job == 1
+
+
         cores_per_job = system_configuration["cores_per_job"]
         region = config["region"]
         iteration = config["iteration"]
@@ -103,6 +121,9 @@ class SlurmScriptMaker:
             config["paths_configuration"], region=region, iteration=iteration
         )
         copy_data(paths["data_path"])
+        relative_paths = system in ['archer', 'jasmin']
+        python = system_configuration['python']
+        mpi_cmd = system_configuration['mpi_cmd']
         return cls(
             config_path=config_path,
             jobs_per_node=jobs_per_node,
@@ -121,19 +142,19 @@ class SlurmScriptMaker:
             output_path=paths["results_path"],
             stdout_path=paths["stdout_path"],
             jobname=jobname,
+            relative_paths=relative_paths,
+            python=python,
+            nodes_per_job=nodes_per_job,
+            mpi_cmd=mpi_cmd,
+            use_jobarray=use_jobarray,
         )
 
     def make_script_lines(self, script_number, index_low, index_high):
         stdout_name = (
             self.stdout_dir / f"{self.region}_{self.iteration}_{script_number:03d}"
         )
-        if self.system == "jasmin":
-            loading_python = [
-                "module purge",
-                "module load eb/OpenMPI/gcc/4.0.0",
-                "module load jaspy/3.7/r20200606",
-                "source /gws/nopw/j04/covid_june/june_venv/bin/activate",
-            ]
+        if self.system in ['jasmin', 'archer']:
+            loading_python = self.python
         elif self.system == "cosma":
             loading_python = [
                 f"module purge",
@@ -152,7 +173,12 @@ class SlurmScriptMaker:
             ]
         else:
             email_lines = []
-        ntasks = max(self.max_cpus_per_node, self.cores_per_job)
+        if self.jobs_per_node > 1:
+            ntasks = max(self.max_cpus_per_node, self.cores_per_job)
+        else:
+            ntasks = self.cores_per_job
+            nodes = self.nodes_per_job
+
         slurm_header = [
             "#!/bin/bash -l",
             "",
@@ -166,26 +192,52 @@ class SlurmScriptMaker:
             f"#SBATCH -t {self.max_time}",
         ]
 
-        parallel_cmd = f"parallel -u --delay .2 -j {index_high-index_low+1}"
-        python_cmd = f'"mpirun -np {self.cores_per_job} python3 -u {self.runner_path.absolute()} {self.config_path.absolute()} -i {{1}}"'
-        full_cmd = [
-            parallel_cmd + " " + python_cmd + f" ::: {{{index_low}..{index_high}}}"
-        ]
+        if self.nodes_per_job > 1:
+            if self.use_jobarray:
+                slurm_header.append(f"#SBATCH --array {index_low},{index_high}")
+                full_cmd = [
+                    f"{self.mpi_cmd} -np {self.cores_per_job} python3 -u {self.runner_path.absolute()} {self.config_path.absolute()} -i $SLURM_ARRAY_TASK_ID"
+                ]
+            else:
+                full_cmd = [f"{self.mpi_cmd} -np {self.cores_per_job} python3 -u {self.runner_path.absolute()} {self.config_path.absolute()} -i {index_low}"]
+        else:
+            parallel_cmd = f"parallel -u --delay .2 -j {index_high-index_low+1}"
+            python_cmd = f'"{self.mpi_cmd} -np {self.cores_per_job} python3 -u {self.runner_path.absolute()} {self.config_path.absolute()} -i {{1}}"'
+            full_cmd = [
+                parallel_cmd + " " + python_cmd + f" ::: {{{index_low}..{index_high}}}"
+            ]
         script_lines = slurm_header + email_lines + loading_python + full_cmd
         return script_lines
 
     def make_scripts(self):
         script_dir = self.output_path / "slurm_scripts"
         script_dir.mkdir(exist_ok=True, parents=True)
-        number_of_scripts = int(
-            np.ceil(len(self.parameters_to_run) / self.jobs_per_node)
-        )
+        if self.jobs_per_node == 0:
+            if self.use_jobarray:
+                number_of_scripts = int(
+                    np.ceil(len(self.parameters_to_run) / self.use_jobarray)
+                )
+            else:
+                number_of_scripts = len(self.parameters_to_run)
+        else:
+            number_of_scripts = int(
+                np.ceil(len(self.parameters_to_run) / self.jobs_per_node)
+            )
         script_names = []
         for i in range(number_of_scripts):
-            idx1 = i * self.jobs_per_node
-            idx2 = min(
-                (i + 1) * self.jobs_per_node - 1, len(self.parameters_to_run) - 1
-            )
+            if self.jobs_per_node:
+                idx1 = i * self.jobs_per_node
+                idx2 = min(
+                    (i + 1) * self.jobs_per_node - 1, len(self.parameters_to_run) - 1
+                )
+            else:
+                if self.use_jobarray:
+                    idx1 = i * self.use_jobarray
+                    idx2 = min(
+                        (i+1) * self.use_jobarray -1, len(self.parameters_to_run) - 1
+                    )
+                else:
+                   idx1, idx2 = i, i
             script_lines = self.make_script_lines(
                 script_number=i, index_low=idx1, index_high=idx2
             )
