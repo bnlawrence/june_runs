@@ -2,15 +2,15 @@ system_configuration:
   name: jasmin #available : [cosma, jasmin]
   queue: jasmin/covid_june
   account: lawrence
-  cores_per_job: 240
+  cores_per_job: 160
   jobs_per_node: 0
-  nodes_per_job: 12
+  nodes_per_job: 8
   parallel_tasks_path: "default"
   runner_path: "default"
   email_notifications: no
   email_address: null # your email here
   verbose: yes
-  max_time: "3:00:00"
+  max_time: "4:00:00"
   python:
       - "conda activate june3"
       - "echo `which python`"
