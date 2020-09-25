@@ -1,7 +1,7 @@
 system_configuration:
   name: jasmin #available : [cosma, jasmin]
   queue: covid_june
-  account: lawrence
+  account: covid_june
   cores_per_job: 160
   jobs_per_node: 0
   nodes_per_job: 8
