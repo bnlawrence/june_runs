@@ -11,8 +11,8 @@ queue_to_max_cpus = {
     "cosma": 16,
     "cosma6": 16,
     "cosma7": 28,
-    "jasmin/covid_june": 20,
-    "archer/standard": 20,
+    "covid_june": 20, # jasmin
+    "standard": 20, # archer
     "cosma-prince": 16,
 }
 default_parallel_tasks_path = (
@@ -221,7 +221,7 @@ class SlurmScriptMaker:
                 number_of_scripts = int(
                     np.ceil(len(self.parameters_to_run) / self.use_jobarray)
                 )
-            else:
+            else:ƒ
                 number_of_scripts = len(self.parameters_to_run)
         else:
             number_of_scripts = int(
