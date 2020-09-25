@@ -16,14 +16,14 @@ system_configuration:
       - "echo `which python`"
       - "module load eb/OpenMPI/gcc/3.1.1"
   mpi_cmd: mpiexec
-  use_jobarray: 4   # postive integer is maximum jobs in a jobarray.
+  use_jobarray: 2   # positive integer is maximum jobs in a jobarray.
 
 region: "england"
 iteration: 1
 
 paths_configuration: # use @ as placeholder
   work_path: "/gws/nopw/j04/covid_june/"
-  base_path: "bnl/adam"
+  base_path: "/gws/nopw/j04/covid_june/bnl/"
   world_path: "@base_path/parallel_worlds_commute/england.hdf5"
   results_path: "@base_path/results"
   summary_path: "@results_path/summaries" # note the different "base"!
