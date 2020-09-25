@@ -221,7 +221,7 @@ class SlurmScriptMaker:
                 number_of_scripts = int(
                     np.ceil(len(self.parameters_to_run) / self.use_jobarray)
                 )
-            else:ƒ
+            else:
                 number_of_scripts = len(self.parameters_to_run)
         else:
             number_of_scripts = int(
