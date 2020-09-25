@@ -1,6 +1,7 @@
 from runner import Runner
 from runner import SlurmScriptMaker
 import sys
+import yaml
 import os
 from argparse import ArgumentParser
 
