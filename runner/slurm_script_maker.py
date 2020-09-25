@@ -194,7 +194,7 @@ class SlurmScriptMaker:
             f"#SBATCH -A {self.account}",
             f"#SBATCH --exclusive",
             f"#SBATCH -t {self.max_time}",
-        ] + self.extra_batch_headers
+        ] + [f"#SBATCH {x}" for x in self.extra_batch_headers]
 
         if self.nodes_per_job > 1:
             if self.use_jobarray:
