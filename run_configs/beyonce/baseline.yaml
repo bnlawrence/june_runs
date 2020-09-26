@@ -10,6 +10,7 @@ system_configuration:
   email_address: null # your email here
   verbose: yes
   max_time: "24:00:00"
+  virtual_env: "source /cosma6/data/dp004/dc-cues1/june_env/bin/activate"
   
 region: "england"
 iteration: 1
@@ -17,7 +18,7 @@ iteration: 1
 paths_configuration: # use @ as placeholder
   base_path: "/cosma6/data/dp004/dc-cues1/june_runs"
   world_path: "/cosma6/data/dp004/dc-quer1/june_worlds/up_to_date/parallel/england_with_commute.hdf5"
-  results_path: "@base_path/beyonce/circuit_breaker_1"
+  results_path: "@base_path/beyonce/baseline"
   summary_path: "@results_path/summaries" # note the different "base"!
   stdout_path: "default"
   config_path: "@base_path/config.yaml"
@@ -26,7 +27,7 @@ infection_configuration:
   infectivity_profile: "XNExp" # available: ["XNExp", "nature", "correction_nature"]
 
 policy_configuration:
-  policy_path: '/cosma6/data/dp004/dc-cues1/june_runs/run_configs/beyonce/policies/circuit_breaker_1.yaml'
+  policy_path: '/cosma6/data/dp004/dc-cues1/june_runs/run_configs/beyonce/policies/baseline.yaml'
   lockdown_ratio: 0.5
 
 parameter_configuration:

@@ -35,7 +35,7 @@ parameter_configuration:
   # number_of_samples: 250 # irrelevant here, as running a grid.
   config_type: "file"
   parameters_to_vary:
-      path: "/cosma6/data/dp004/dc-quer1/june_runs/parameters/beyonce/parameters.csv"
+      path: "/cosma6/data/dp004/dc-cues1/june_runs/run_configs/beyonce/parameters.csv"
 # can also provide fixed parameters as dict like policy_configuration
 
 summary_configuration:
