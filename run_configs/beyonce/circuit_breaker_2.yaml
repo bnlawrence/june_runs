@@ -10,6 +10,7 @@ system_configuration:
   email_address: null # your email here
   verbose: yes
   max_time: "24:00:00"
+  virtual_env: "source /cosma6/data/dp004/dc-cues1/june_env/bin/activate"
   
 region: "england"
 iteration: 1
