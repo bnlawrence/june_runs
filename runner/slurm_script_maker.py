@@ -21,7 +21,7 @@ default_parallel_tasks_path = (
 default_run_simulation_script = Path(__file__).parent.parent / "run_simulation.py"
 default_config_path = Path(__file__).parent.parent / "run_configs/config_example.yaml"
 
-
+# could consider refactoring into base classs and scheduler specific classes:
 class SlurmScriptMaker:
     def __init__(
         self,
@@ -49,6 +49,7 @@ class SlurmScriptMaker:
         mpi_cmd="mpirun",
         use_jobarray=False,
         extra_batch_headers=[],
+        scheduler='slurm',
     ):
         self.region = region
         self.cores_per_job = cores_per_job
@@ -82,6 +83,7 @@ class SlurmScriptMaker:
         self.mpi_cmd = mpi_cmd
         self.use_jobarray = use_jobarray
         self.extra_batch_headers = extra_batch_headers
+        self.scheduler = scheduler
     @classmethod
     def from_file(cls, parameters_to_run, config_path: str = default_config_path):
         with open(config_path, "r") as f:
@@ -114,7 +116,6 @@ class SlurmScriptMaker:
         # sanity check ... not sure this is the right sanity check yet.
         assert jobs_per_node == 0 or nodes_per_job == 1
 
-
         cores_per_job = system_configuration["cores_per_job"]
         region = config["region"]
         iteration = config["iteration"]
@@ -125,7 +126,15 @@ class SlurmScriptMaker:
         relative_paths = system in ['archer', 'jasmin']
         python = system_configuration['python']
         mpi_cmd = system_configuration['mpi_cmd']
-        extra_batch_headers = system_configuration['extra_batch_headers']
+
+        if 'extra_batch_headers' in system_configuration:
+            extra_batch_headers = system_configuration['extra_batch_headers']
+        else:
+            extra_batch_headers = []
+        if 'scheduler' in system_configuration:
+            scheduler = system_configuration['scheduler']
+        else:
+            scheduler = 'slurm'
 
         return cls(
             config_path=config_path,
@@ -151,6 +160,7 @@ class SlurmScriptMaker:
             mpi_cmd=mpi_cmd,
             use_jobarray=use_jobarray,
             extra_batch_headers=extra_batch_headers,
+            scheduler=scheduler,
         )
 
     def make_script_lines(self, script_number, index_low, index_high):
@@ -183,21 +193,42 @@ class SlurmScriptMaker:
             ntasks = self.cores_per_job
             nodes = self.nodes_per_job
 
-        slurm_header = [
-            "#!/bin/bash -l",
-            "",
-            f"#SBATCH --ntasks {ntasks}",
-            f"#SBATCH -J {self.jobname}_{self.iteration}_{script_number:03d}",
-            f"#SBATCH -o {stdout_name}.out",
-            f"#SBATCH -e {stdout_name}.err",
-            f"#SBATCH -p {self.queue}",
-            f"#SBATCH -A {self.account}",
-            f"#SBATCH --exclusive",
-            f"#SBATCH -t {self.max_time}",
-        ] + [f"#SBATCH {x}" for x in self.extra_batch_headers]
+        if self.scheduler == 'slurm':
+
+            slurm_header = [
+                "#!/bin/bash -l",
+                "",
+                f"#SBATCH --ntasks {ntasks}",
+                f"#SBATCH -J {self.jobname}_{self.iteration}_{script_number:03d}",
+                f"#SBATCH -o {stdout_name}.out",
+                f"#SBATCH -e {stdout_name}.err",
+                f"#SBATCH -p {self.queue}",
+                f"#SBATCH -A {self.account}",
+                f"#SBATCH --exclusive",
+                f"#SBATCH -t {self.max_time}",
+            ] + [f"#SBATCH {x}" for x in self.extra_batch_headers]
+
+        elif self.scheduler == 'pbs':
+
+            slurm_header = [
+                "#!/bin/bash -l",
+                "",
+                f"PBS -N {self.jobname}_{self.iteration}_{script_number:03d}",
+                f"PBS -l select={self.nodes_per_job}",
+                f"PBS -l walltime={self.max_time}",
+                f"PBS -A {self.account}",
+                f"PBS -o {stdout_name}$PBS_JOBNAME.out",
+                f"PBS -e {stdout_name}$PBS_JOBNAME.err",
+
+            ] + [f"#PBS {x}" for x in self.extra_batch_headers]
+
+        else:
+            raise NotImplementedError
 
         if self.nodes_per_job > 1:
             if self.use_jobarray:
+                if self.scheduler != 'slurm':
+                    raise NotImplementedError
                 slurm_header.append(f"#SBATCH --array {index_low},{index_high}")
                 full_cmd = [
                     f"{self.mpi_cmd} -np {self.cores_per_job} python3 -u {self.runner_path.absolute()} {self.config_path.absolute()} -i $SLURM_ARRAY_TASK_ID"
@@ -255,8 +286,9 @@ class SlurmScriptMaker:
         submit_scripts_path = self.output_path / "submit_scripts.sh"
         with open(submit_scripts_path, "w") as f:
             f.write("#!/bin/bash" + "\n\n")
+            sch = {'slurm':'sbatch', 'pbs':'qsub'}[self.scheduler]
             for i, script_name in enumerate(script_names):
-                line = f"sbatch {script_name.absolute()}"
+                line = f"{sch} {script_name.absolute()}"
                 f.write(line + "\n")
                 if i == 0:
                     try:
