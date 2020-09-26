@@ -40,7 +40,7 @@ infection_configuration:
   infectivity_profile: "XNExp" # available: ["XNExp", "nature", "correction_nature"]
 
 policy_configuration:
-  policy_path: '/cosma6/data/dp004/dc-cues1/JUNE/configs/defaults/policy/policy.yaml'
+  policy_path: '/home/users/lawrence/J3/JUNE/configs/defaults/policy/policy.yaml'
   lockdown_ratio: 0.5
 
 parameter_configuration:
