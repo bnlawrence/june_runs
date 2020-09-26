@@ -3,13 +3,13 @@ system_configuration:
   queue: cosma6
   account: dp004 
   jobs_per_node: 1
-  cores_per_job: 16
+  cores_per_job: 160
   parallel_tasks_path: "default"
   runner_path: "default"
   email_notifications: no
   email_address: null # your email here
   verbose: yes
-  max_time: "72:00:00"
+  max_time: "24:00:00"
   
 region: "england"
 iteration: 1
@@ -31,7 +31,7 @@ policy_configuration:
 
 parameter_configuration:
   iteration: 1
-  parameters_to_run: "all" 
+  parameters_to_run: [0,1]
   # number_of_samples: 250 # irrelevant here, as running a grid.
   config_type: "file"
   parameters_to_vary:
