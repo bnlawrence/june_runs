@@ -227,11 +227,14 @@ class SlurmScriptMaker:
 
         if self.nodes_per_job > 1:
             if self.use_jobarray:
-                if self.scheduler != 'slurm':
-                    raise NotImplementedError
-                slurm_header.append(f"#SBATCH --array {index_low},{index_high}")
+                if self.scheduler == 'slurm':
+                    slurm_header.append(f"#SBATCH --array {index_low},{index_high}")
+                    job_index = "$SLURM_ARRAY_TASK_ID"
+                elif self.scheduler == 'pbs':
+                    slurm_header.append(f"PBS -J {index_low}:{index_high}")
+                    job_index = "$PBS_ARRAY_INDEX"
                 full_cmd = [
-                    f"{self.mpi_cmd} -np {self.cores_per_job} python3 -u {self.runner_path.absolute()} {self.config_path.absolute()} -i $SLURM_ARRAY_TASK_ID"
+                    f"{self.mpi_cmd} -np {self.cores_per_job} python3 -u {self.runner_path.absolute()} {self.config_path.absolute()} -i {job_index}"
                 ]
             else:
                 full_cmd = [f"{self.mpi_cmd} -np {self.cores_per_job} python3 -u {self.runner_path.absolute()} {self.config_path.absolute()} -i {index_low}"]
