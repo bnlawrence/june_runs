@@ -42,6 +42,7 @@ class SlurmScriptMaker:
         jobname=None,
         parallel_tasks_path=default_parallel_tasks_path,
         runner_path=default_run_simulation_script,
+        virtual_env=None,
     ):
         self.region = region
         self.cores_per_job = cores_per_job
@@ -60,6 +61,7 @@ class SlurmScriptMaker:
         self.runner_path = Path(runner_path)
         self.output_path = output_path
         self.config_path = Path(config_path)
+        self.virtual_env = virtual_env
         if stdout_path is None or stdout_path == Path("default"):
             self.stdout_dir = self.output_path / "stdout"
         else:
@@ -69,6 +71,7 @@ class SlurmScriptMaker:
         else:
             self.jobname = jobname
         self.stdout_dir.mkdir(parents=True, exist_ok=True)
+
 
     @classmethod
     def from_file(cls, parameters_to_run, config_path: str = default_config_path):
@@ -95,6 +98,10 @@ class SlurmScriptMaker:
             jobname = system_configuration["jobname"]
         else:
             jobname = None
+        if "virtual_env" in system_configuration:
+            virtual_env = system_configuration['virtual_env']
+        else:
+            virtual_env = None
         jobs_per_node = system_configuration["jobs_per_node"]
         cores_per_job = system_configuration["cores_per_job"]
         region = config["region"]
@@ -121,9 +128,10 @@ class SlurmScriptMaker:
             output_path=paths["results_path"],
             stdout_path=paths["stdout_path"],
             jobname=jobname,
+            virtual_env=virtual_env
         )
 
-    def make_script_lines(self, script_number, index_low, index_high):
+    def make_script_lines(self, script_number, index_low, index_high, virtual_env=None):
         stdout_name = (
             self.stdout_dir / f"{self.region}_{self.iteration}_{script_number:03d}"
         )
@@ -143,6 +151,8 @@ class SlurmScriptMaker:
                 f"module load openmpi/3.0.1",
                 f"module load gnu-parallel",
             ]
+        if virtual_env is not None:
+            loading_python.append(virtual_env)
         else:
             raise ValueError(f"System {self.system} is not supported")
         if (self.email_notifications) and (self.email_address is not None):
@@ -187,7 +197,7 @@ class SlurmScriptMaker:
                 (i + 1) * self.jobs_per_node - 1, len(self.parameters_to_run) - 1
             )
             script_lines = self.make_script_lines(
-                script_number=i, index_low=idx1, index_high=idx2
+                script_number=i, index_low=idx1, index_high=idx2, virtual_env=self.virtual_env
             )
             script_name = script_dir / f"{self.region}_{i:03}.sh"
             script_names.append(script_name)
