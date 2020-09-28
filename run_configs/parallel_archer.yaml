@@ -31,14 +31,14 @@ paths_configuration: # use @ as placeholder
   results_path: "@base_path/results"
   summary_path: "@results_path/summaries" # note the different "base"!
   stdout_path: "default"
-  rundef_path: "@base_path/june_runs"
-  config_path: "@rundef_path/config.yaml"
+  config_path: "@base_path/june_runs/config.yaml"
+  policy_path: "@base_path/JUNE/configs/defaults/policy/policy.yaml"
+  parameter_path: "@base_path/june_runs/parameters/adam.csv"
 
 infection_configuration:
   infectivity_profile: "XNExp" # available: ["XNExp", "nature", "correction_nature"]
 
 policy_configuration:
-  policy_path: '/work/n02/n02/bnl/june/JUNE/configs/defaults/policy/policy.yaml'
   lockdown_ratio: 0.5
 
 parameter_configuration:
@@ -46,8 +46,8 @@ parameter_configuration:
   parameters_to_run: [0,13,127,137]
   # number_of_samples: 250 # irrelevant here, as running a grid.
   config_type: "file"
-  parameters_to_vary:
-      path: "parameters/adam.csv"
+  # ensure you have entered a parameter path in the path section!
+
 # can also provide fixed parameters as dict like policy_configuration
 
 summary_configuration:

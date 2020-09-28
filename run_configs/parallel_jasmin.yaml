@@ -28,19 +28,19 @@ paths_configuration: # use @ as placeholder
   # choose the base_path version with @test_path in it ...
   test_path: "test"
   #base_path: "@test_path/gws/nopw/j04/covid_june/bnl/"
-  base_path: "/gws/nopw/j04/covid_june/bnl/"
-  world_path: "/gws/nopw/j04/covid_june/parallel_worlds_commute/england.hdf5"
-  results_path: "@base_path/results"
-  summary_path: "@results_path/summaries" # note the different "base"!
+  base_path: "/gws/nopw/j04/covid_june/"
+  world_path: "@base_path/parallel_worlds_commute/england.hdf5"
+  results_path: "@base_path/bnl/results"
+  summary_path: "@results_path/bnl/summaries" # note the different "base"!
   stdout_path: "default"
-  config_path: "@base_path/june_runs/config.yaml"
-
+  config_path: "@base_path/bnl/june_runs/config.yaml"
+  policy_path: "@base_path/JUNE/configs/defaults/policy/policy.yaml"
+  parameter_path: "@base_path/june_runs/parameters/adam.csv"
 
 infection_configuration:
   infectivity_profile: "XNExp" # available: ["XNExp", "nature", "correction_nature"]
 
 policy_configuration:
-  policy_path: '/home/users/lawrence/J3/JUNE/configs/defaults/policy/policy.yaml'
   lockdown_ratio: 0.5
 
 parameter_configuration:
@@ -48,8 +48,8 @@ parameter_configuration:
   parameters_to_run: [0,13,127,137]
   # number_of_samples: 250 # irrelevant here, as running a grid.
   config_type: "file"
-  parameters_to_vary:
-      path: "parameters/adam.csv"
+  # ensure you have entered a parameter path in the path section!
+
 # can also provide fixed parameters as dict like policy_configuration
 
 summary_configuration:
