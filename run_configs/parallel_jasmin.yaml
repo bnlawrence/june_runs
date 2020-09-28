@@ -2,9 +2,9 @@ system_configuration:
   name: jasmin #available : [cosma, jasmin]
   queue: covid_june
   account: covid_june
-  cores_per_job: 160
+  cores_per_job: 140
   jobs_per_node: 0
-  nodes_per_job: 8
+  nodes_per_job: 7
   parallel_tasks_path: "default"
   runner_path: "default"
   email_notifications: no
