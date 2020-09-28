@@ -143,7 +143,7 @@ class Runner:
             )
         elif parameter_configuration.get("config_type", None) == "file":
             self.parameter_generator = ParameterGenerator.from_file(
-                parameter_configuration["parameters_to_vary"]["path"],
+                paths_configuration["parameter_path"],
                 parameters_to_run=parameter_configuration["parameters_to_run"],
                 parameters_to_fix=parameter_configuration.get(
                     "parameters_to_fix", None
