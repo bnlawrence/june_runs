@@ -14,7 +14,7 @@ system_configuration:
   python:
       - "conda activate junew"
       - "echo `which python`"
-  mpi_cmd: aprun
+  mpi_cmd: aprun -n
   use_jobarray: 0   # positive integer is maximum jobs in a jobarray.
   scheduler: pbs
 

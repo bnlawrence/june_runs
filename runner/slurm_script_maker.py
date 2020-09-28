@@ -201,8 +201,6 @@ class SlurmScriptMaker:
                 "",
                 f"#SBATCH --ntasks {ntasks}",
                 f"#SBATCH -J {self.jobname}_{self.iteration}_{script_number:03d}",
-                f"#SBATCH -o {stdout_name}.out",
-                f"#SBATCH -e {stdout_name}.err",
                 f"#SBATCH -p {self.queue}",
                 f"#SBATCH -A {self.account}",
                 f"#SBATCH --exclusive",
@@ -230,7 +228,10 @@ class SlurmScriptMaker:
         if self.nodes_per_job > 1:
             if self.use_jobarray:
                 if self.scheduler == 'slurm':
-                    slurm_header.append(f"#SBATCH --array {index_low},{index_high}")
+                    slurm_header += [f"#SBATCH --array {index_low},{index_high}",
+                                     f"#SBATCH -o {stdout_name}_%a.out",
+                                     f"#SBATCH -e {stdout_name}_%a.err"
+                                     ]
                     job_index = "$SLURM_ARRAY_TASK_ID"
                 elif self.scheduler == 'pbs':
                     slurm_header.append(f"PBS -J {index_low}:{index_high}")
@@ -239,6 +240,9 @@ class SlurmScriptMaker:
                     f"{self.mpi_cmd} {self.cores_per_job} python3 -u {self.runner_path.absolute()} {self.config_path.absolute()} -i {job_index}"
                 ]
             else:
+                slurm_header += [f"#SBATCH -o {stdout_name}.out",
+                                 f"#SBATCH -e {stdout_name}.err",
+                                 ]
                 full_cmd = [f"{self.mpi_cmd} {self.cores_per_job} python3 -u {self.runner_path.absolute()} {self.config_path.absolute()} -i {index_low}"]
         else:
             parallel_cmd = f"parallel -u --delay .2 -j {index_high-index_low+1}"

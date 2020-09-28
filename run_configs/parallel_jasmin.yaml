@@ -15,7 +15,7 @@ system_configuration:
       - "conda activate june3"
       - "echo `which python`"
       - "module load eb/OpenMPI/gcc/3.1.1"
-  mpi_cmd: mpiexec
+  mpi_cmd: mpiexec -np
   use_jobarray: 2   # positive integer is maximum jobs in a jobarray.
   extra_batch_headers:
     - "--mem=64G"
