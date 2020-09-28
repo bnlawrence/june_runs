@@ -95,10 +95,8 @@ class Runner:
             or parameter_configuration["random_seed"] == "random"
         ):
             random_seed = random.randint(0, 1_000_000_000)
-            print(f"Random seed set to a random value ({random_seed})")
         else:
             random_seed = set_random_seed(int(parameter_configuration["random_seed"]))
-            print("Random seed set to {random_seed}")
         set_random_seed(random_seed)
         self.random_seed = random_seed
         self.system_configuration = system_configuration
@@ -115,7 +113,7 @@ class Runner:
         processed_parameters = self._read_parameter_configuration(
             parameter_configuration["parameters_to_vary"]
         )
-        print('parameter configuration = ', parameter_configuration['parameters_to_run'])
+        #print('parameter configuration = ', parameter_configuration['parameters_to_run'])
         if parameter_configuration.get("config_type", None) == "latin_hypercube":
             self.parameter_generator = ParameterGenerator.from_latin_hypercube(
                 processed_parameters,
@@ -464,6 +462,8 @@ class Runner:
                 age_bins = self.summary_configuration["age_bins"]
             else:
                 age_bins = None
+            if age_bins == "individual":
+                age_bins = np.arange(0,100)
             ages_df = read.age_summary(age_bins)
 
             age_path = summary_dir / f"age_summary_{parameter_index:03}.csv"
