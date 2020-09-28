@@ -151,10 +151,10 @@ class SlurmScriptMaker:
                 f"module load openmpi/3.0.1",
                 f"module load gnu-parallel",
             ]
-        if virtual_env is not None:
-            loading_python.append(virtual_env)
         else:
             raise ValueError(f"System {self.system} is not supported")
+        if virtual_env is not None:
+            loading_python.append(virtual_env)
         if (self.email_notifications) and (self.email_address is not None):
             email_lines = [
                 f"#SBATCH --mail-type=BEGIN,END",
