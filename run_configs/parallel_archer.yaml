@@ -1,45 +1,44 @@
 system_configuration:
-  name: archer #available : [cosma, jasmin]
-  queue: standard
-  account: n02-cms
-  cores_per_job: 240
+  name: archer #available : [cosma, jasmin, archer]
+  queue: short
+  account: "n02-cms"
+  cores_per_job: 160
   jobs_per_node: 0
-  nodes_per_job: 10
+  nodes_per_job: 8
   parallel_tasks_path: "default"
   runner_path: "default"
   email_notifications: no
   email_address: null # your email here
   verbose: yes
-  max_time: "1:30:00"
+  max_time: "0:20:00"
   python:
       - "conda activate junew"
       - "echo `which python`"
-      - "cd $PBS_O_WORKDIR"
-      - "echo `pwd`"
   mpi_cmd: aprun
   use_jobarray: 0   # positive integer is maximum jobs in a jobarray.
   scheduler: pbs
 
-region: "england"
+region: "northwest"
 iteration: 1
 
 paths_configuration: # use @ as placeholder
   # if you are configuring somewhere other than jasmin, then
   # choose the base_path version with @test_path in it ...
   test_path: "test"
-  base_path: "@test_path/work/n02/n02/bnl/june/"
-  #base_path: "/work/n02/n02/bnl/june/"
+  #base_path: "@test_path/work/n02/n02/bnl/june/"
+  base_path: "/work/n02/n02/bnl/june/"
   world_path: "@base_path/parallel_worlds_commute/england.hdf5"
   results_path: "@base_path/results"
   summary_path: "@results_path/summaries" # note the different "base"!
   stdout_path: "default"
-  config_path: "@base_path/june_runs/config.yaml"
+  rundef_path: "@base_path/june_runs"
+  config_path: "@rundef_path/config.yaml"
 
 infection_configuration:
   infectivity_profile: "XNExp" # available: ["XNExp", "nature", "correction_nature"]
 
 policy_configuration:
-  policy_path: '/cosma6/data/dp004/dc-cues1/JUNE/configs/defaults/policy/policy.yaml'
+  policy_path: '/work/n02/n02/bnl/june/JUNE/configs/defaults/policy/policy.yaml'
   lockdown_ratio: 0.5
 
 parameter_configuration:
