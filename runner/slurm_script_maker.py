@@ -11,9 +11,10 @@ queue_to_max_cpus = {
     "cosma": 16,
     "cosma6": 16,
     "cosma7": 28,
+    "cosma-prince": 16,
     "covid_june": 20, # jasmin
     "standard": 20, # archer
-    "cosma-prince": 16,
+    "short": 8 # archer
 }
 default_parallel_tasks_path = (
     Path(__file__).parent.parent / "parallel_tasks/build/parallel_tasks"
