@@ -36,7 +36,7 @@ class ParameterGenerator:
 
     @classmethod
     def from_file(cls, path_to_parameters: str, parameters_to_fix: Optional[dict] = None, parameters_to_run="all"):
-        parameter_list = pd.read_csv(path_to_parameters, sep=" ").to_dict("records")
+        parameter_list = pd.read_csv(path_to_parameters).to_dict("records")
         return cls(parameter_list=parameter_list, parameters_to_fix=parameters_to_fix, parameters_to_run=parameters_to_run)
 
     @classmethod

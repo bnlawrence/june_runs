@@ -51,6 +51,7 @@ class SlurmScriptMaker:
         use_jobarray=False,
         extra_batch_headers=[],
         scheduler='slurm',
+        virtual_env=None,
     ):
         self.region = region
         self.cores_per_job = cores_per_job
@@ -69,6 +70,7 @@ class SlurmScriptMaker:
         self.runner_path = Path(runner_path)
         self.output_path = output_path
         self.config_path = Path(config_path)
+        self.virtual_env = virtual_env
         if stdout_path is None or stdout_path == Path("default"):
             self.stdout_dir = self.output_path / "stdout"
         else:
@@ -110,6 +112,10 @@ class SlurmScriptMaker:
             jobname = system_configuration["jobname"]
         else:
             jobname = None
+        if "virtual_env" in system_configuration:
+            virtual_env = system_configuration['virtual_env']
+        else:
+            virtual_env = None
         jobs_per_node = system_configuration["jobs_per_node"]
         nodes_per_job = system_configuration["nodes_per_job"]
         use_jobarray = system_configuration["use_jobarray"]
@@ -155,6 +161,7 @@ class SlurmScriptMaker:
             output_path=paths["results_path"],
             stdout_path=paths["stdout_path"],
             jobname=jobname,
+            virtual_env=virtual_env
             relative_paths=relative_paths,
             python=python,
             nodes_per_job=nodes_per_job,
@@ -164,7 +171,7 @@ class SlurmScriptMaker:
             scheduler=scheduler,
         )
 
-    def make_script_lines(self, script_number, index_low, index_high):
+    def make_script_lines(self, script_number, index_low, index_high, virtual_env=None):
         stdout_name = (
             self.stdout_dir / f"{self.region}_{self.iteration}_{script_number:03d}"
         )
@@ -181,6 +188,8 @@ class SlurmScriptMaker:
             ]
         else:
             raise ValueError(f"System {self.system} is not supported")
+        if virtual_env is not None:
+            loading_python.append(virtual_env)
         if (self.email_notifications) and (self.email_address is not None):
             email_lines = [
                 f"#SBATCH --mail-type=BEGIN,END",
@@ -288,7 +297,7 @@ class SlurmScriptMaker:
                 else:
                    idx1, idx2 = i, i
             script_lines = self.make_script_lines(
-                script_number=i, index_low=idx1, index_high=idx2
+                script_number=i, index_low=idx1, index_high=idx2, virtual_env=self.virtual_env
             )
             script_name = script_dir / f"{self.region}_{i:03}.sh"
             script_names.append(script_name)

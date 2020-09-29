@@ -420,71 +420,74 @@ class Runner:
 
     # @staticmethod # Can't decide, static or not - would be helpful to call as static for failed loggers...
     def extract_summaries(
-        self, parameter_index=None, logger_dir=None, summary_dir=None, verbose=False
+        self, n_processes, parameter_index=None, logger_dir=None, summary_dir=None, verbose=False
     ):
+        if self.mpi_rank == 0:
 
-        if parameter_index is not None:
-            index_to_run = self.get_index_to_run(parameter_index)
-            run_name = f"run_{parameter_index:03}"
+            if parameter_index is not None:
+                index_to_run = self.get_index_to_run(parameter_index)
+                run_name = f"run_{index_to_run:03}"
 
-        if logger_dir is None:
-            logger_dir = self.paths_configuration["results_path"] / run_name
+            if logger_dir is None:
+                logger_dir = self.paths_configuration["results_path"] / run_name
 
-        if summary_dir is None:
-            summary_dir = self.paths_configuration["summary_path"]
+            if summary_dir is None:
+                summary_dir = self.paths_configuration["summary_path"]
 
-        t1 = time.time()
-        try:
-            logger = ReadLogger(logger_dir)
-            logger.load_infection_location()
-        except Exception as e:
-            print(str(e))
-            l1 = "***" + 19 * " " + "***"
-            print(f'{l1}\n{4*" "}CAN\'T READ LOGGER{4*" "}\n{l1}')
+            t1 = time.time()
+            try:
+                read = ReadLogger(logger_dir, root_output_file='logger',n_processes=n_processes)
+                read.load_infection_location()
+            except Exception as e:
+                print(str(e))
+                l1 = "***" + 19 * " " + "***"
+                print(f'{l1}\n{4*" "}CAN\'T READ LOGGER{4*" "}\n{l1}')
+                return None
+            t2 = time.time()
+            verbose_print(f"{(t2-t1)/60.}", verbose=verbose)
+
+            # contains info on super areas, probably the most complete run summary
+            run_summary_path = summary_dir / f"run_summary_{index_to_run:03}.csv"
+            daily_regional_path = (
+                summary_dir / f"daily_regional_summary_{index_to_run:03}.csv"
+            )
+            regions = read.region_summary()
+            regions.to_csv(daily_regional_path)
+            #save_regional_summaries(logger, run_summary_path, daily_regional_path)
+
+            world_path = summary_dir / f"world_summary_{index_to_run:03}.csv"
+            daily_world_path = summary_dir / f"daily_world_summary_{index_to_run:03}.csv"
+            world_df = read.world_summary()
+            world_df.to_csv(world_path)
+            #save_world_summaries(logger, world_path, daily_world_path)
+
+            if self.summary_configuration:
+                age_bins = self.summary_configuration["age_bins"]
+            else:
+                age_bins = None
+            if age_bins == "individual":
+                age_bins = np.arange(0,100)
+            ages_df = read.age_summary(age_bins)
+
+            age_path = summary_dir / f"age_summary_{parameter_index:03}.csv"
+            daily_age_path = summary_dir / f"daily_age_summary_{index_to_run:03}.csv"
+            ages_df.to_csv(age_path)
+            #save_age_summaries(logger, age_path, daily_age_path, age_bins=age_bins)
+
+            infection_locations_path = (
+                summary_dir / f"total_infection_locations_{index_to_run:03}.csv"
+            )
+            daily_loc_ts_path = (
+                summary_dir / f"daily_infection_loc_timeseries_{index_to_run:03}.csv"
+            )
+            #save_infection_locations(logger, infection_locations_path, daily_loc_ts_path)
+            read.locations_df.to_csv(daily_loc_ts_path)
+
+            real_data_path = Path("/cosma5/data/durham/dc-truo1/june_analysis")
+            '''
+            plotter = Plotter(logger, real_data_path, summary_dir, parameter_index)
+            plotter.plot_region_data()
+            plotter.plot_age_stratified(sitrep_bins=False)
+            plotter.plot_age_stratified(sitrep_bins=True)
+            '''
             return None
-        t2 = time.time()
-        verbose_print(f"{(t2-t1)/60.}", verbose=verbose)
-
-        # contains info on super areas, probably the most complete run summary
-        run_summary_path = summary_dir / f"run_summary_{index_to_run:03}.csv"
-        daily_regional_path = (
-            summary_dir / f"daily_regional_summary_{index_to_run:03}.csv"
-        )
-        save_regional_summaries(logger, run_summary_path, daily_regional_path)
-
-        world_path = summary_dir / f"world_summary_{index_to_run:03}.csv"
-        daily_world_path = summary_dir / f"daily_world_summary_{index_to_run:03}.csv"
-        save_world_summaries(logger, world_path, daily_world_path)
-
-        if self.summary_configuration:
-            age_bins = self.summary_configuration["age_bins"]
-        else:
-            age_bins = None
-
-        age_path = summary_dir / f"age_summary_{parameter_index:03}.csv"
-        daily_age_path = summary_dir / f"daily_age_summary_{index_to_run:03}.csv"
-        save_age_summaries(logger, age_path, daily_age_path, age_bins=age_bins)
-
-        hospital_path = summary_dir / f"hospital_summary_{index_to_run:03}.csv"
-        save_hospital_summary(logger, hospital_path)
-
-        infection_locations_path = (
-            summary_dir / f"total_infection_locations_{index_to_run:03}.csv"
-        )
-        daily_loc_ts_path = (
-            summary_dir / f"daily_infection_loc_timeseries_{index_to_run:03}.csv"
-        )
-        save_infection_locations(logger, infection_locations_path, daily_loc_ts_path)
-
-        # logger does these differently now
-        # inf_loc_ts_path = summary_dir / f"infection_loc_timeseries_{parameter_index:03}.csv"
-        # save_location_infections_timeseries(logger, inf_loc_ts_path,daily_loc_ts_path)
-
-        real_data_path = Path("/cosma5/data/durham/dc-truo1/june_analysis")
-        # real_data_path = Path('/home/htruong/Documents/JUNE/Notebooks')
-        plotter = Plotter(logger, real_data_path, summary_dir, parameter_index)
-        plotter.plot_region_data()
-        plotter.plot_age_stratified(sitrep_bins=False)
-        plotter.plot_age_stratified(sitrep_bins=True)
-
-        return None
