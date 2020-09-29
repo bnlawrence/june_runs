@@ -2,9 +2,9 @@ system_configuration:
   name: archer #available : [cosma, jasmin, archer]
   queue: short
   account: "n02-cms"
-  cores_per_job: 192
+  cores_per_job: 96
   jobs_per_node: 0
-  nodes_per_job: 8
+  nodes_per_job: 4
   parallel_tasks_path: "default"
   runner_path: "default"
   email_notifications: no
