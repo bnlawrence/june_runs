@@ -14,5 +14,5 @@ cd /work/n02/n02/bnl/june/june_runs
 
 echo `pwd`
 
-aprun -n 1 python run_simulation.py --setup run_configs/parallel_archer.yaml
+aprun -n 1 python run_simulation.py --setup run_configs/northwest_beyonce_archer.yaml
 
