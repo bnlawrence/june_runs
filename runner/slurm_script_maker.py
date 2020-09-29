@@ -161,7 +161,7 @@ class SlurmScriptMaker:
             output_path=paths["results_path"],
             stdout_path=paths["stdout_path"],
             jobname=jobname,
-            virtual_env=virtual_env
+            virtual_env=virtual_env,
             relative_paths=relative_paths,
             python=python,
             nodes_per_job=nodes_per_job,
