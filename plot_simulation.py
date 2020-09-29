@@ -1,6 +1,7 @@
 from runner import Runner
 from runner import SlurmScriptMaker
 import yaml
+
 import sys
 import os
 from argparse import ArgumentParser
@@ -28,3 +29,4 @@ else:
 #    simulator = runner.generate_simulator(parameter_index)
 #    simulator.run()
     runner.extract_summaries(n_processes = 112, parameter_index=parameter_index)
+

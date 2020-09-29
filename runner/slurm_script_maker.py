@@ -87,6 +87,8 @@ class SlurmScriptMaker:
         self.use_jobarray = use_jobarray
         self.extra_batch_headers = extra_batch_headers
         self.scheduler = scheduler
+
+
     @classmethod
     def from_file(cls, parameters_to_run, config_path: str = default_config_path):
         with open(config_path, "r") as f:

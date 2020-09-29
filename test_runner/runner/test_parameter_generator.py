@@ -41,7 +41,7 @@ def test__from_file():
         {"beta_pub": 3, "beta_household": 1, "beta_care_home": 0.2},
     ]
     df = pd.DataFrame(parameter_list)
-    df.to_csv('parameters.csv', sep=' ', index_label=False)
+    df.to_csv('parameters.csv', index_label=False)
 
     parameter_generator = pg.ParameterGenerator.from_file(
         path_to_parameters="parameters.csv", parameters_to_run="all"

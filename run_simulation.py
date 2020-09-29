@@ -1,6 +1,7 @@
 from runner import Runner
 from runner import SlurmScriptMaker
 import sys
+import yaml
 import os
 from argparse import ArgumentParser
 
@@ -26,5 +27,7 @@ else:
         raise ValueError("provide parameter index")
     simulator = runner.generate_simulator(parameter_index)
     simulator.run()
-    runner.extract_summaries(parameter_index=parameter_index)
+    with open(config_path, "r") as f:
+        config = yaml.load(f, Loader=yaml.FullLoader)
 
+    runner.extract_summaries(n_processes = config['system_configuration']['cores_per_job'], parameter_index=parameter_index)

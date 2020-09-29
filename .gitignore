@@ -13,5 +13,3 @@ old_*
 !run_configs
 # ignore everything in run_configs
 run_configs/*
-# allow-list only the example in run_configs
-!run_configs/config_example.yaml
