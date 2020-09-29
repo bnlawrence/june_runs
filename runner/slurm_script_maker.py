@@ -13,8 +13,8 @@ queue_to_max_cpus = {
     "cosma7": 28,
     "cosma-prince": 16,
     "covid_june": 20, # jasmin
-    "standard": 20, # archer
-    "short": 8, # archer
+    "standard": 24, # archer
+    "short": 24, # archer
 }
 default_parallel_tasks_path = (
     Path(__file__).parent.parent / "parallel_tasks/build/parallel_tasks"
@@ -217,9 +217,6 @@ class SlurmScriptMaker:
                 f"#PBS -l walltime={self.max_time}",
                 f"#PBS -q {self.queue}",
                 f"#PBS -A {self.account}",
-                f"#PBS -o {stdout_name}.out",
-                f"#PBS -e {stdout_name}.err",
-
             ] + [f"#PBS {x}" for x in self.extra_batch_headers]
 
         else:
@@ -234,15 +231,23 @@ class SlurmScriptMaker:
                                      ]
                     job_index = "$SLURM_ARRAY_TASK_ID"
                 elif self.scheduler == 'pbs':
-                    slurm_header.append(f"PBS -J {index_low}:{index_high}")
+                    slurm_header += [f"PBS -J {index_low}:{index_high}",
+                                     f"#PBS -o {stdout_name}_^array_index^.out",
+                                     f"#PBS -e {stdout_name}_^array_index^.err",
+                                     ]
                     job_index = "$PBS_ARRAY_INDEX"
                 full_cmd = [
                     f"{self.mpi_cmd} {self.cores_per_job} python3 -u {self.runner_path.absolute()} {self.config_path.absolute()} -i {job_index}"
                 ]
             else:
-                slurm_header += [f"#SBATCH -o {stdout_name}.out",
-                                 f"#SBATCH -e {stdout_name}.err",
-                                 ]
+                if self.scheduler == 'slurm':
+                    slurm_header += [f"#SBATCH -o {stdout_name}.out",
+                                     f"#SBATCH -e {stdout_name}.err",
+                                     ]
+                else:
+                    slurm_header += [f"#PBS -o {stdout_name}.out",
+                                     f"#PBS -e {stdout_name}.err",
+                                     ]
                 full_cmd = [f"{self.mpi_cmd} {self.cores_per_job} python3 -u {self.runner_path.absolute()} {self.config_path.absolute()} -i {index_low}"]
         else:
             parallel_cmd = f"parallel -u --delay .2 -j {index_high-index_low+1}"
