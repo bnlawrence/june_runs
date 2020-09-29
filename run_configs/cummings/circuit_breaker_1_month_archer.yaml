@@ -27,7 +27,7 @@ paths_configuration: # use @ as placeholder
   results_path: "@base_path/results/cummings"
   summary_path: "@results_path/summaries" # note the different "base"!
   stdout_path: "default"
-  config_path: "@base_path/june_runs/config.yaml"
+  config_path: "@base_path/june_runs/run_configs/cummings/config_cummings.yaml"
   policy_path: "@base_path/june_runs/run_configs/cummings/policies/circuit_breaker_1_month.yaml"
   parameter_path: "@base_path/june_runs/run_configs/beyonce/parameters.csv"
 
