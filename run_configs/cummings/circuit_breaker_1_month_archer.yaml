@@ -19,7 +19,7 @@ system_configuration:
   scheduler: pbs
   
 region: "england"
-iteration: 1
+iteration: 2
 
 paths_configuration: # use @ as placeholder
   base_path: "/work/n02/n02/bnl/june/"
@@ -38,7 +38,7 @@ policy_configuration:
   lockdown_ratio: 0.5
 
 parameter_configuration:
-  iteration: 2
+  iteration: 1
   parameters_to_run: [3] 
   # number_of_samples: 250 # irrelevant here, as running a grid.
   config_type: "file"
