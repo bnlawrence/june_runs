@@ -253,9 +253,11 @@ class Runner:
         return travel
 
     def generate_policies(self, parameters_dict, verbose=False):
-        if 'policy_path' in self.policy_configuration:
+        if 'policy_path' in self.paths_configuration:
+            print(f"POLICY: Using {self.paths_configuration['policy_path']}")
             policies = Policies.from_file(config_file=self.paths_configuration['policy_path'])
         else:
+            print('POLICY: Using default policies')
             policies = Policies.from_file()
         policies_to_modify = defaultdict(list)
         policy_types = set()
