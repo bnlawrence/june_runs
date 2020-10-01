@@ -19,7 +19,7 @@ system_configuration:
   scheduler: pbs
   
 region: "england"
-iteration: 2
+iteration: 3
 
 paths_configuration: # use @ as placeholder
   base_path: "/work/n02/n02/bnl/june/"

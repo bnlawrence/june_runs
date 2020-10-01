@@ -38,7 +38,7 @@ policy_configuration:
   lockdown_ratio: 0.5
 
 parameter_configuration:
-  iteration: 1
+  iteration: 2
   parameters_to_run: [3] 
   # number_of_samples: 250 # irrelevant here, as running a grid.
   config_type: "file"
