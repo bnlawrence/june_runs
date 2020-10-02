@@ -353,7 +353,7 @@ class Runner:
         print(infection_seed.__dict__)
         return infection_seed
 
-    def generate_records(self, save_path: str):
+    def generate_record(self, save_path: str):
         record = Record(
                 record_path=save_path, 
                 record_static_data=True, 
