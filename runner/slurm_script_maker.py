@@ -15,6 +15,7 @@ queue_to_max_cpus = {
     "covid_june": 20, # jasmin
     "standard": 24, # archer
     "short": 24, # archer
+    "high": 24, # archer 
 }
 default_parallel_tasks_path = (
     Path(__file__).parent.parent / "parallel_tasks/build/parallel_tasks"
