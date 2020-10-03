@@ -25,9 +25,8 @@ from june.infection import InfectionSelector
 from june.hdf5_savers import generate_world_from_hdf5, load_population_from_hdf5
 from june.hdf5_savers.utils import read_dataset
 from june import paths
-from june.logger.read_logger import ReadLogger
 from june.domain import Domain, generate_super_areas_to_domain_dict
-from june.logger import Logger
+from june.records import Record
 
 from .parameter_generator import ParameterGenerator
 from .extract_data_new import (
@@ -86,7 +85,6 @@ class Runner:
         verbose: bool = False,
     ):
         # fix seed before everything for reproducibility
-        # TODO: save this to the logger or wherever
         self.mpi_comm = MPI.COMM_WORLD
         self.mpi_rank = self.mpi_comm.Get_rank()
         self.mpi_size = self.mpi_comm.Get_size()
@@ -357,9 +355,13 @@ class Runner:
         print(infection_seed.__dict__)
         return infection_seed
 
-    def generate_logger(self, save_path: str):
-        logger = Logger(save_path=save_path, file_name=f"logger.{self.mpi_rank}.hdf5")
-        return logger
+    def generate_record(self, save_path: str):
+        record = Record(
+                record_path=save_path, 
+                record_static_data=True, 
+                mpi_rank=self.mpi_rank
+                )
+        return record 
 
     def get_index_to_run(self, parameter_index):
         index_to_run = self.parameter_generator.parameters_to_run[parameter_index]
@@ -396,13 +398,16 @@ class Runner:
         policies = self.generate_policies(parameters_dict)
         verbose_print(memory_status(when="before world"), verbose=verbose)  #
         verbose_print(memory_status(when="after world"), verbose=verbose)  #
-        # TODO: put comment into logger here (and save path) to not clog simulator
-        logger = self.generate_logger(save_path=save_path)
-        logger.log_population(domain.people)
+        record = self.generate_record(save_path=save_path)
+        record.static_data(world=domain)
         infection_seed = self.generate_infection_seed(
             parameters_dict=parameters_dict, domain=domain, infection_selector=infection_selector
         )
         print("Comment is...", self.comment)
+        record.meta_information(comment=self.comment,
+                random_state= self.random_seed,
+                number_of_cores = self.system_configuration['cores_per_job'],
+        )
         simulator = Simulator.from_file(
             world=domain,
             interaction=interaction,
@@ -412,81 +417,8 @@ class Runner:
             infection_seed=infection_seed,  
             infection_selector=infection_selector,
             policies=policies,
-            logger=logger,
-            # comment=self.comment,#TODO: move this to logger
+            record=record,
         )
         return simulator
 
-    # @staticmethod # Can't decide, static or not - would be helpful to call as static for failed loggers...
-    def extract_summaries(
-        self, n_processes, parameter_index=None, logger_dir=None, summary_dir=None, verbose=False
-    ):
-        if self.mpi_rank == 0:
 
-            if parameter_index is not None:
-                index_to_run = self.get_index_to_run(parameter_index)
-                run_name = f"run_{index_to_run:03}"
-
-            if logger_dir is None:
-                logger_dir = self.paths_configuration["results_path"] / run_name
-
-            if summary_dir is None:
-                summary_dir = self.paths_configuration["summary_path"]
-
-            t1 = time.time()
-            try:
-                read = ReadLogger(logger_dir, root_output_file='logger',n_processes=n_processes)
-                read.load_infection_location()
-            except Exception as e:
-                print(str(e))
-                l1 = "***" + 19 * " " + "***"
-                print(f'{l1}\n{4*" "}CAN\'T READ LOGGER{4*" "}\n{l1}')
-                return None
-            t2 = time.time()
-            verbose_print(f"{(t2-t1)/60.}", verbose=verbose)
-
-            # contains info on super areas, probably the most complete run summary
-            run_summary_path = summary_dir / f"run_summary_{index_to_run:03}.csv"
-            daily_regional_path = (
-                summary_dir / f"daily_regional_summary_{index_to_run:03}.csv"
-            )
-            regions = read.region_summary()
-            regions.to_csv(daily_regional_path)
-            #save_regional_summaries(logger, run_summary_path, daily_regional_path)
-
-            world_path = summary_dir / f"world_summary_{index_to_run:03}.csv"
-            daily_world_path = summary_dir / f"daily_world_summary_{index_to_run:03}.csv"
-            world_df = read.world_summary()
-            world_df.to_csv(world_path)
-            #save_world_summaries(logger, world_path, daily_world_path)
-
-            if self.summary_configuration:
-                age_bins = self.summary_configuration["age_bins"]
-            else:
-                age_bins = None
-            if age_bins == "individual":
-                age_bins = np.arange(0,100)
-            ages_df = read.age_summary(age_bins)
-
-            age_path = summary_dir / f"age_summary_{parameter_index:03}.csv"
-            daily_age_path = summary_dir / f"daily_age_summary_{index_to_run:03}.csv"
-            ages_df.to_csv(age_path)
-            #save_age_summaries(logger, age_path, daily_age_path, age_bins=age_bins)
-
-            infection_locations_path = (
-                summary_dir / f"total_infection_locations_{index_to_run:03}.csv"
-            )
-            daily_loc_ts_path = (
-                summary_dir / f"daily_infection_loc_timeseries_{index_to_run:03}.csv"
-            )
-            #save_infection_locations(logger, infection_locations_path, daily_loc_ts_path)
-            read.locations_df.to_csv(daily_loc_ts_path)
-
-            real_data_path = Path("/cosma5/data/durham/dc-truo1/june_analysis")
-            '''
-            plotter = Plotter(logger, real_data_path, summary_dir, parameter_index)
-            plotter.plot_region_data()
-            plotter.plot_age_stratified(sitrep_bins=False)
-            plotter.plot_age_stratified(sitrep_bins=True)
-            '''
-            return None
