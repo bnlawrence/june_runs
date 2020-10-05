@@ -45,12 +45,19 @@ class RunSetup:
             raise NotImplementedError
         return parameter_generator
 
-    def generate_parameters(self):
+    def save_run_parameters(self):
         for i, parameter in enumerate(self.parameter_generator):
+            ret = {}
+            ret["parameters"] = parameter
+            ret["world_path"] = self.paths["world_path"]
+            ret["baseline_policy_path"] = self.paths["baseline_policy_path"]
+            ret["baseline_interaction_path"] = self.paths["baseline_interaction_path"]
+            ret["simulation_config_path"] = self.paths["simulation_config_path"]
             save_path = self.paths["runs_path"] / f"run_{i:03d}"
+            ret["save_path"] = str(save_path)
             save_path.mkdir(exist_ok=True, parents=True)
             with open(save_path / "parameters.json", "w") as f:
-                json.dump(parameter, f, indent=4, sort_keys=True, default=str)
+                json.dump(ret, f, indent=4, sort_keys=True, default=str)
 
 
 if __name__ == "__main__":
@@ -68,4 +75,4 @@ if __name__ == "__main__":
         parameter_configuration=config["parameter_configuration"],
         paths_configuration=config["paths_configuration"],
     )
-    run_setup.generate_parameters()
+    run_setup.save_run_parameters()

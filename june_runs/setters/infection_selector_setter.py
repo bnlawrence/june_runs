@@ -8,6 +8,11 @@ class InfectionSelectorSetter:
     def __init__(self, infectivity_profile: str = "xnexp"):
         self.infectivity_profile = infectivity_profile
 
+    @classmethod
+    def from_parameters(cls, parameters: dict):
+        infectivity_profile = parameters.get("infectivity_profile", None)
+        return cls(infectivity_profile=infectivity_profile)
+
     def make_infection_selector(self, health_index_generator: HealthIndexGenerator):
         if self.infectivity_profile == "xnexp":
             transmission_path = transmission_configs / "XNExp.yaml"

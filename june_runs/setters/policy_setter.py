@@ -11,10 +11,23 @@ def str_to_class(classname):
 
 
 class PolicySetter:
-    def __init__(self, policies_baseline: dict):
+    def __init__(self, policies_baseline: dict, policies_to_modify: dict):
         self.policies_baseline = policies_baseline
+        self.policies_to_modify = policies_to_modify
 
-    def make_policies(self, policies_to_modify):
+    @classmethod
+    def from_parameters(cls, parameters: dict):
+        alpha_physical = parameters.get("alpha_physical", None)
+        betas = parameters.get("betas", None)
+        alpha_physical = parameters.get("alpha_physical", None)
+        susceptibilities = parameters.get("susceptibilities", None)
+        return cls(
+            betas=betas,
+            alpha_physical=alpha_physical,
+            susceptibilities_by_age=susceptibilities,
+        )
+
+    def make_policies(self):
         policies = []
         for policy, policy_data in self.policies_baseline.items():
             camel_case_key = "".join(x.capitalize() or "_" for x in policy.split("_"))
@@ -25,10 +38,10 @@ class PolicySetter:
                         or "end_time" not in policy_data_i.keys()
                     ):
                         raise ValueError("policy config file not valid.")
-                    if policy in policies_to_modify:
-                        if policy_i in policies_to_modify[policy]:
+                    if policy in self.policies_to_modify:
+                        if policy_i in self.policies_to_modify[policy]:
                             policy_data_modified = deepcopy(policy_data_i)
-                            tomodify = policies_to_modify[policy][str(policy_i)]
+                            tomodify = self.policies_to_modify[policy][str(policy_i)]
                             for parameter, parameter_value in tomodify.items():
                                 policy_data_modified[parameter] = parameter_value
                         else:
@@ -39,9 +52,9 @@ class PolicySetter:
                         str_to_class(camel_case_key)(**policy_data_modified)
                     )
             else:
-                if policy in policies_to_modify:
+                if policy in self.policies_to_modify:
                     policy_data_modified = deepcopy(policy_data)
-                    tomodify = policies_to_modify[policy]
+                    tomodify = self.policies_to_modify[policy]
                     for parameter, parameter_value in tomodify.items():
                         policy_data_modified[parameter] = parameter_value
                 else:

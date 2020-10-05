@@ -8,14 +8,33 @@ class InteractionSetter:
         betas=None,
         susceptibilities_by_age=None,
         population=None,
+        baseline_interaction_path=None,
     ):
         self.alpha_physical = alpha_physical
         self.betas = betas
         self.susceptibilities_by_age = susceptibilities_by_age
         self.population = population
+        self.baseline_interaction_path = baseline_interaction_path
+
+    @classmethod
+    def from_parameters(cls, parameters: dict):
+        interaction_parameters = parameters["interaction"]
+        baseline_interaction_path = parameters["baseline_interaction_path"]
+        alpha_physical = interaction_parameters.get("alpha_physical", None)
+        betas = interaction_parameters.get("betas", None)
+        alpha_physical = interaction_parameters.get("alpha_physical", None)
+        susceptibilities = interaction_parameters.get("susceptibilities", None)
+        return cls(
+            betas=betas,
+            alpha_physical=alpha_physical,
+            susceptibilities_by_age=susceptibilities,
+            baseline_interaction_path=baseline_interaction_path,
+        )
 
     def make_interaction(self):
-        interaction = Interaction.from_file(population=self.population)
+        interaction = Interaction.from_file(
+            config_filename=self.baseline_interaction_path, population=self.population
+        )
         if self.alpha_physical is not None:
             interaction.alpha_physical = self.alpha_physical
         if self.betas is not None:

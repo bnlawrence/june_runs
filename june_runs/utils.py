@@ -78,6 +78,7 @@ def parse_paths(paths_configuration):
         or ret["simulation_config_path"] == "default"
     ):
         ret["simulation_config_path"] = june_runs_path / "config.yaml"
+    print(ret)
     return ret
 
 

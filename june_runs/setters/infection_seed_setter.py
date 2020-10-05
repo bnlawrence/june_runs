@@ -14,6 +14,20 @@ class InfectionSeedSetter:
         self.seeding_start = seeding_start
         self.seeding_end = seeding_end
 
+    @classmethod
+    def from_parameters(cls, parameters: dict):
+        infection_parameters = parameters["infection"]
+        seed_strength = infection_parameters.get("seed_strength", None)
+        age_profile = infection_parameters.get("age_profile", None)
+        seeding_start = infection_parameters.get("seeding_start", None)
+        seeding_end = infection_parameters.get("seeding_end", None)
+        return cls(
+            seed_strength=seed_strength,
+            age_profile=age_profile,
+            seeding_start=seeding_start,
+            seeding_end=seeding_end
+        )
+
     def make_infection_seed(self, infection_selector, world):
         oc = Observed2Cases.from_file(
             health_index_generator=infection_selector.health_index_generator,
