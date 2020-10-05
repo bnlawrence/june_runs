@@ -122,33 +122,37 @@ class TestMakeLockdownParameters:
         for policy_name in lockdown_policies:
             if policy_name == "quarantine":
                 for policy in lockdown_policies[policy_name].values():
-                    if policy["start_time"] == datetime.strptime(
-                        "2020-03-16", "%Y-%m-%d"
-                    ).date():
-                        assert policy['compliance'] == 0.4
-                        assert policy['household_compliance'] == 0.1
+                    if (
+                        policy["start_time"]
+                        == datetime.strptime("2020-03-16", "%Y-%m-%d").date()
+                    ):
+                        assert policy["compliance"] == 0.4
+                        assert policy["household_compliance"] == 0.1
                         counter += 1
-                    elif policy["start_time"] == datetime.strptime(
-                        "2020-03-24", "%Y-%m-%d"
-                    ).date():
-                        assert policy['compliance'] == 0.8
-                        assert policy['household_compliance'] == 0.2
+                    elif (
+                        policy["start_time"]
+                        == datetime.strptime("2020-03-24", "%Y-%m-%d").date()
+                    ):
+                        assert policy["compliance"] == 0.8
+                        assert policy["household_compliance"] == 0.2
                         counter += 1
             elif policy_name == "social_distancing":
                 for policy in lockdown_policies[policy_name].values():
-                    if policy["start_time"] == datetime.strptime(
-                        "2020-03-16", "%Y-%m-%d"
-                    ).date():
-                        for group, factor in policy['beta_factors'].items():
+                    if (
+                        policy["start_time"]
+                        == datetime.strptime("2020-03-16", "%Y-%m-%d").date()
+                    ):
+                        for group, factor in policy["beta_factors"].items():
                             if group == "household":
                                 assert factor == 1.0
                             else:
                                 assert factor == 0.75
                         counter += 1
-                    elif policy["start_time"] == datetime.strptime(
-                        "2020-03-24", "%Y-%m-%d"
-                    ).date():
-                        for group, factor in policy['beta_factors'].items():
+                    elif (
+                        policy["start_time"]
+                        == datetime.strptime("2020-03-24", "%Y-%m-%d").date()
+                    ):
+                        for group, factor in policy["beta_factors"].items():
                             if group == "household":
                                 assert factor == 1.0
                             else:
