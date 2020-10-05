@@ -16,7 +16,7 @@ with open(join(this_dir, "requirements.txt")) as f:
     requirements = f.read().split("\n")
 
 setup(
-        name="june-runs",
+        name="june_runs",
         version="0.1.0",
         description="Run suite for JUNE",
         url="https://github.com/aidan-sedgewick/june_runs",

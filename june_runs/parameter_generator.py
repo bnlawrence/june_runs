@@ -61,7 +61,6 @@ class ParameterGenerator:
         self, parameter_list: List[dict], parameters_to_run: List[int] = "all",
     ):
         self.parameter_list = self._read_parameter_list(parameter_list)
-        self.parameter_list = parameter_list
         self.parameters_to_run = self._read_parameters_to_run(parameters_to_run)
 
     def _read_parameter_list(self, parameter_list):
@@ -80,6 +79,7 @@ class ParameterGenerator:
                             **lockdown_config
                         )
                         parameters["policies"] = {**ret, **lockdown_policies}
+        return parameter_list
 
     @classmethod
     def from_file(
@@ -91,7 +91,7 @@ class ParameterGenerator:
 
     @classmethod
     def from_grid(
-        cls, parameter_dict: List[dict], parameters_to_run="all",
+        cls, parameter_dict: dict, parameters_to_run="all",
     ):
         paths = []
         value_ranges = []
@@ -115,7 +115,7 @@ class ParameterGenerator:
 
     @classmethod
     def from_regular_grid(
-        cls, parameter_dict: List[dict], parameters_to_run="all",
+        cls, parameter_dict: dict, parameters_to_run="all",
     ):
         ret = {}
         for path, value in iter_paths(parameter_dict):
@@ -131,7 +131,7 @@ class ParameterGenerator:
 
     @classmethod
     def from_latin_hypercube(
-        cls, parameter_dict: List[dict], n_samples, parameters_to_run="all",
+        cls, parameter_dict: dict, n_samples, parameters_to_run="all",
     ):
         paths = []
         value_ranges = []
@@ -187,7 +187,7 @@ class ParameterGenerator:
         return self.get_parameters_from_index(idx)
 
     def __iter__(self):
-        return iter([self[idx] for idx in self.parameter_list])
+        return iter([self[idx] for idx in range(len(self.parameters_to_run))])
 
 
 def build_policy_config_for_lockdown(

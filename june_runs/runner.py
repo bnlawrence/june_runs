@@ -1,4 +1,4 @@
-from runner.setters import (
+from june_runs.setters import (
     InteractionSetter,
     PolicySetter,
     InfectionSeedSetter,

@@ -6,7 +6,7 @@ import numpy as np
 from pathlib import Path
 
 import pandas as pd
-from runner import ParameterGenerator
+from june_runs import ParameterGenerator
 
 test_directory = Path(__file__).parent
 

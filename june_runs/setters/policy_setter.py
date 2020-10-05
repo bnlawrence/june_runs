@@ -28,7 +28,7 @@ class PolicySetter:
                     if policy in policies_to_modify:
                         if policy_i in policies_to_modify[policy]:
                             policy_data_modified = deepcopy(policy_data_i)
-                            tomodify = policies_to_modify[policy][policy_i]
+                            tomodify = policies_to_modify[policy][str(policy_i)]
                             for parameter, parameter_value in tomodify.items():
                                 policy_data_modified[parameter] = parameter_value
                         else:
