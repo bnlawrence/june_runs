@@ -93,6 +93,17 @@ class ScriptMaker:
                 f"#PBS -q {queue}",
                 f"#PBS -A {account}",
             ]
+        elif scheduler == "lsf":
+            header = [
+                "#!/bin/bash -l",
+                "",
+                f"#BSUB -n {self.cpus_per_job}",
+                f"#BSUB -J {self.job_name}_{script_number:03d}",
+                f"#BSUB -q {queue}",
+                f"#BSUB -P {account}",
+                f"#BSUB -x",
+                f"#BSUB -W {max_time}",
+            ]
         else:
             raise ValueError(f"Scheduler {scheduler} not yet supported.")
         return header
