@@ -189,6 +189,9 @@ class ParameterGenerator:
     def __iter__(self):
         return iter([self[idx] for idx in range(len(self.parameters_to_run))])
 
+    def __len__(self):
+        return len(self.parameters_to_run)
+
 
 def build_policy_config_for_lockdown(
     soft_lockdown_date: str,

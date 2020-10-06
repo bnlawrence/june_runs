@@ -6,7 +6,7 @@ from copy import deepcopy
 from pathlib import Path
 
 from june_runs.utils import parse_paths
-from june_runs import ParameterGenerator
+from june_runs import ParameterGenerator, ScriptMaker
 
 
 class RunSetup:
@@ -14,10 +14,19 @@ class RunSetup:
     General class to handle setting runs.
     """
 
-    def __init__(self, paths_configuration, parameter_configuration):
-        self.paths = parse_paths(paths_configuration)
-        self.parameters = parameter_configuration
+    def __init__(self, run_configuration):
+        self.paths = parse_paths(run_configuration["paths_configuration"])
+        self.parameters = run_configuration["parameter_configuration"]
         self.parameter_generator = self._init_parameter_generator()
+        system_configuration = run_configuration["system_configuration"]
+        self.script_maker = ScriptMaker(
+            system=system_configuration["system_to_use"],
+            run_directory=self.paths["runs_path"],
+            job_name = self.paths["run_name"],
+            memory_per_job = system_configuration["memory_per_job"],
+            cpus_per_job = system_configuration["cpus_per_job"],
+            number_of_jobs = len(self.parameter_generator)
+        )
 
     def _init_parameter_generator(self):
         sampling_type = self.parameters.get("sampling_type", None)
@@ -51,13 +60,14 @@ class RunSetup:
             ret = {}
             save_path = self.paths["runs_path"] / f"run_{i:03d}"
             ret["parameters"] = parameter
-            ret["paths"] = {"june_runs_path": self.paths["june_runs_path"],
-                    "save_path" :  str(save_path),
-                    "world_path": self.paths["world_path"],
-                    "baseline_policy_path" : self.paths["baseline_policy_path"],
-                    "baseline_interaction_path" : self.paths["baseline_interaction_path"],
-                    "simulation_config_path" : self.paths["simulation_config_path"],
-                    }
+            ret["paths"] = {
+                "june_runs_path": self.paths["june_runs_path"],
+                "save_path": str(save_path),
+                "world_path": self.paths["world_path"],
+                "baseline_policy_path": self.paths["baseline_policy_path"],
+                "baseline_interaction_path": self.paths["baseline_interaction_path"],
+                "simulation_config_path": self.paths["simulation_config_path"],
+            }
             save_path.mkdir(exist_ok=True, parents=True)
             with open(save_path / "parameters.json", "w") as f:
                 json.dump(ret, f, indent=4, default=str)
@@ -75,7 +85,7 @@ if __name__ == "__main__":
     with open(args.config) as f:
         config = yaml.load(f, Loader=yaml.FullLoader)
     run_setup = RunSetup(
-        parameter_configuration=config["parameter_configuration"],
-        paths_configuration=config["paths_configuration"],
+        run_configuration = config,
     )
     run_setup.save_run_parameters()
+    run_setup.script_maker.write_scripts()

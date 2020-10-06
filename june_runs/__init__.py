@@ -1,6 +1,6 @@
 from .runner import Runner
 from .parameter_generator import ParameterGenerator
-from .slurm_script_maker import SlurmScriptMaker
+from .script_maker import ScriptMaker
 from .utils import (
     parse_paths,
     verbose_print,
@@ -10,3 +10,4 @@ from .utils import (
     copy_data,
 )
 from .extract_data import *
+
