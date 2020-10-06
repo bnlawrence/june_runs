@@ -1,4 +1,7 @@
 from june.interaction import Interaction
+from june.paths import configs_path
+
+default_interaction_config = configs_path / "defaults/interaction/interaction.yaml"
 
 
 class InteractionSetter:
@@ -14,7 +17,7 @@ class InteractionSetter:
         self.betas = betas
         self.susceptibilities_by_age = susceptibilities_by_age
         self.population = population
-        self.baseline_interaction_path = baseline_interaction_path
+        self.baseline_interaction_path = baseline_interaction_path or default_interaction_config
 
     @classmethod
     def from_parameters(

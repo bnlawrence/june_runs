@@ -2,7 +2,7 @@ import pytest
 
 from june.demography import Person, Population
 from june.interaction import Interaction
-from runner.setters import InteractionSetter
+from june_runs.setters import InteractionSetter
 
 @pytest.fixture(name='people')
 def make_pop():
