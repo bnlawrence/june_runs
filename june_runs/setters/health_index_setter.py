@@ -7,7 +7,9 @@ class HealthIndexSetter:
 
     @classmethod
     def from_parameters(cls, parameters: dict):
-        asymptomatic_ratio = parameters.get("asymptomatic_ratio", None)
+        asymptomatic_ratio = parameters.get("infection", {}).get(
+            "asymptomatic_ratio", None
+        )
         return cls(asymptomatic_ratio=asymptomatic_ratio)
 
     def make_health_index(self):

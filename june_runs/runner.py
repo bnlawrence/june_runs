@@ -1,5 +1,8 @@
 import json
 import h5py
+import numba as nb
+import random
+import numpy as np
 from pathlib import Path
 
 from june.domain import Domain, generate_super_areas_to_domain_dict
@@ -17,13 +20,30 @@ from june_runs.setters import (
     HealthIndexSetter,
 )
 
+def set_random_seed(seed=999):
+    """
+    Sets global seeds for testing in numpy, random, and numbaized numpy.
+    """
+
+    @nb.njit(cache=True)
+    def set_seed_numba(seed):
+        random.seed(seed)
+        np.random.seed(seed)
+
+    np.random.seed(seed)
+    set_seed_numba(seed)
+    random.seed(seed)
+    return
 
 class Runner:
     def __init__(self, run_config):
         with open(run_config, "r") as f:
             run_config = json.load(f)
+        self.random_seed = run_config["random_seed"]
+        set_random_seed(self.random_seed)
         self.paths = run_config["paths"]
         self.parameters = run_config["parameters"]
+        self.purpose_of_the_run = run_config["purpose_of_the_run"]
 
     def generate_domain(self):
         """
@@ -54,13 +74,15 @@ class Runner:
             health_index_generator=health_index_generator
         )
 
-    def generate_interaction(self):
-        interaction_setter = InteractionSetter.from_parameters(self.parameters)
+    def generate_interaction(self, baseline_interaction_path, population):
+        interaction_setter = InteractionSetter.from_parameters(
+            self.parameters, baseline_interaction_path, population=population
+        )
         return interaction_setter.make_interaction()
 
     def generate_leisure(self, domain: Domain):
         leisure = generate_leisure_for_config(
-            domain, self.paths_configuration["config_path"]
+            domain, self.paths["simulation_config_path"]
         )
         return leisure
 
@@ -95,18 +117,20 @@ class Runner:
         infection_selector = self.generate_infection_selector(
             health_index_generator=health_index_generator
         )
-        interaction = self.generate_interaction()
+        interaction = self.generate_interaction(
+            baseline_interaction_path=self.paths["baseline_interaction_path"],
+            population=domain.people,
+        )
         leisure = self.generate_leisure(domain=domain)
         travel = self.generate_travel()
         policies = self.generate_policies()
         record = self.generate_record()
         record.static_data(world=domain)
         infection_seed = self.generate_infection_seed(
-            world=domain,
-            infection_selector=infection_selector,
+            world=domain, infection_selector=infection_selector,
         )
         record.meta_information(
-            comment=self.comment,
+            comment=self.purpose_of_the_run,
             random_state=self.random_seed,
             number_of_cores=mpi_size,
         )

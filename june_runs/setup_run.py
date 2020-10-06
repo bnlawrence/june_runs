@@ -1,6 +1,7 @@
 import argparse
 import yaml
 import json
+import random
 import os
 from copy import deepcopy
 from pathlib import Path
@@ -15,6 +16,7 @@ class RunSetup:
     """
 
     def __init__(self, run_configuration):
+        self.run_configuration = run_configuration
         self.paths = parse_paths(run_configuration["paths_configuration"])
         self.parameters = run_configuration["parameter_configuration"]
         self.parameter_generator = self._init_parameter_generator()
@@ -59,6 +61,11 @@ class RunSetup:
         for i, parameter in enumerate(self.parameter_generator):
             ret = {}
             save_path = self.paths["runs_path"] / f"run_{i:03d}"
+            random_seed = self.run_configuration.get("random_seed", "random")
+            if random_seed == "random":
+                random_seed = random.randint(0, 1_000_000_000)
+            ret["purpose_of_the_run"] = self.run_configuration.get("purpose_of_the_run", "no comment")
+            ret["random_seed"] = random_seed
             ret["parameters"] = parameter
             ret["paths"] = {
                 "june_runs_path": self.paths["june_runs_path"],

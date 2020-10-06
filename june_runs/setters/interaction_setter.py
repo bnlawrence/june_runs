@@ -17,9 +17,10 @@ class InteractionSetter:
         self.baseline_interaction_path = baseline_interaction_path
 
     @classmethod
-    def from_parameters(cls, parameters: dict):
+    def from_parameters(
+        cls, parameters: dict, baseline_interaction_path: str, population
+    ):
         interaction_parameters = parameters["interaction"]
-        baseline_interaction_path = parameters["baseline_interaction_path"]
         alpha_physical = interaction_parameters.get("alpha_physical", None)
         betas = interaction_parameters.get("betas", None)
         alpha_physical = interaction_parameters.get("alpha_physical", None)
@@ -29,6 +30,7 @@ class InteractionSetter:
             alpha_physical=alpha_physical,
             susceptibilities_by_age=susceptibilities,
             baseline_interaction_path=baseline_interaction_path,
+            population=population,
         )
 
     def make_interaction(self):

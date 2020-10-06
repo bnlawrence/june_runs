@@ -2,7 +2,9 @@ from pathlib import Path
 
 from june import paths
 from june.infection import InfectionSelector, HealthIndexGenerator
+
 transmission_configs = paths.configs_path / "defaults/transmission"
+
 
 class InfectionSelectorSetter:
     def __init__(self, infectivity_profile: str = "xnexp"):
@@ -10,7 +12,9 @@ class InfectionSelectorSetter:
 
     @classmethod
     def from_parameters(cls, parameters: dict):
-        infectivity_profile = parameters.get("infectivity_profile", None)
+        infectivity_profile = parameters.get("infection", {}).get(
+            "infectivity_profile", "xnexp"
+        )
         return cls(infectivity_profile=infectivity_profile)
 
     def make_infection_selector(self, health_index_generator: HealthIndexGenerator):
@@ -29,4 +33,3 @@ class InfectionSelectorSetter:
             health_index_generator=health_index_generator,
         )
         return infection_selector
-

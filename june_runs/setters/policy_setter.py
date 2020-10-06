@@ -16,15 +16,11 @@ class PolicySetter:
         self.policies_to_modify = policies_to_modify
 
     @classmethod
-    def from_parameters(cls, parameters: dict):
-        alpha_physical = parameters.get("alpha_physical", None)
-        betas = parameters.get("betas", None)
-        alpha_physical = parameters.get("alpha_physical", None)
-        susceptibilities = parameters.get("susceptibilities", None)
+    def from_parameters(cls, policies_to_modify: dict, baseline_policy_path: str):
+        with open(baseline_policy_path, "r") as f:
+            policies_baseline = yaml.load(f, Loader=yaml.FullLoader)
         return cls(
-            betas=betas,
-            alpha_physical=alpha_physical,
-            susceptibilities_by_age=susceptibilities,
+            policies_baseline=policies_baseline, policies_to_modify=policies_to_modify
         )
 
     def make_policies(self):
