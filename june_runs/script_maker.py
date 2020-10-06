@@ -63,7 +63,8 @@ class ScriptMaker:
         return header + ["\n"] +  modules_to_load + ["\n"] + command
 
     def make_running_script(self, script_number):
-        parameters_path =  self._get_script_dir(script_number) / "parameters.json"
+        script_dir = self._get_script_dir(script_number)
+        parameters_path = script_dir / "parameters.json"
         python_script = [
             "from june_runs import Runner\n",
             f"runner = Runner(\"{parameters_path}\")",

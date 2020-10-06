@@ -64,6 +64,7 @@ class RunSetup:
             random_seed = self.run_configuration.get("random_seed", "random")
             if random_seed == "random":
                 random_seed = random.randint(0, 1_000_000_000)
+            ret["run_number"] = i
             ret["purpose_of_the_run"] = self.run_configuration.get("purpose_of_the_run", "no comment")
             ret["random_seed"] = random_seed
             ret["parameters"] = parameter
@@ -71,6 +72,7 @@ class RunSetup:
                 "june_runs_path": self.paths["june_runs_path"],
                 "save_path": str(save_path),
                 "world_path": self.paths["world_path"],
+                "summary_path": self.paths["summary_path"],
                 "baseline_policy_path": self.paths["baseline_policy_path"],
                 "baseline_interaction_path": self.paths["baseline_interaction_path"],
                 "simulation_config_path": self.paths["simulation_config_path"],
