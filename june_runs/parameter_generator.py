@@ -83,11 +83,13 @@ class ParameterGenerator:
 
     @classmethod
     def from_file(
-        cls, path_to_parameters: str, parameters_to_run="all",
+        cls, path_to_parameters: str, additional_parameters = None, parameters_to_run="all",
     ):
+        additional_parameters = None or {}
         with open(path_to_parameters, "r") as f:
             parameter_list = json.load(f)
-        return cls(parameter_list=parameter_list, parameters_to_run=parameters_to_run,)
+        ret = [{**parameter, **additional_parameters} for parameter in parameter_list]
+        return cls(parameter_list=ret, parameters_to_run=parameters_to_run,)
 
     @classmethod
     def from_grid(
@@ -191,6 +193,10 @@ class ParameterGenerator:
 
     def __len__(self):
         return len(self.parameters_to_run)
+
+    def save_parameters_to_file(self, file_path):
+        with open(file_path, "w") as f:
+            json.dump(self.parameter_list, f, indent=4, default=str)
 
 
 def build_policy_config_for_lockdown(
