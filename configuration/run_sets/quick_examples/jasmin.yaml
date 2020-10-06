@@ -15,6 +15,7 @@ paths_configuration: # use @ as placeholder
   baseline_interaction_path: "default"
   basline_policy_path: "@june_runs_path/configuration/default_baseline_configs/policy.yaml"
   simulation_config_path: "default"
+  virtual_env_path: "@june_runs_path/june_venv"
 
 parameter_configuration:
   parameters_to_run: "all"

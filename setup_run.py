@@ -27,7 +27,8 @@ class RunSetup:
             job_name = self.paths["run_name"],
             memory_per_job = system_configuration["memory_per_job"],
             cpus_per_job = system_configuration["cpus_per_job"],
-            number_of_jobs = len(self.parameter_generator)
+            number_of_jobs = len(self.parameter_generator),
+            virtual_env_path = self.paths["virtual_env_path"]
         )
 
     def _init_parameter_generator(self):

@@ -1,0 +1,77 @@
+system_configuration:
+  name: cosma #available : [cosma, jasmin]
+  queue: cosma
+  account: durham
+  # total cores used per node = cores_per_job * jobs_per_node
+  cores_per_job: 4
+  jobs_per_node: 4
+  parallel_tasks_path: "default"
+  runner_path: "default"
+  email_notifications: no
+  email_address: null # your email here
+  verbose: yes
+  max_time: "72:00:00"
+  
+region: "test_region"
+iteration: 1
+comment: "This is a test run_configuration."
+
+paths_configuration: # use @ as placeholder
+#base_path: "/cosma6/data/dp004/dc-quer1/june_runs"
+  base_path: "/cosma7/data/durham/dc-sedg2/june_runs" # your base 
+  world_path: "@base_path/june_worlds/up_to_date/tests.hdf5"
+  results_path: "@base_path/june_results_example2"
+  summary_path: "@results_path/summaries" # note the different "base"!
+  stdout_path: "default"
+  config_path: "@base_path/config.yaml"
+
+infection_configuration:
+  infectivity_profile: "XNExp" # available: ["XNExp", "nature", "correction_nature"]
+
+policy_configuration:
+  lockdown_ratio: 0.5
+
+parameter_configuration:
+  iteration: 1
+  number_of_samples: 250
+  parameters_to_run: "all"
+  random_seed: "random"
+
+  config_type: "latin_hypercube" # irrelevant, latin_hypercubeby default
+  parameters_to_vary:
+    betas:
+      'pub'       : [0.01, 0.25]
+      'grocery'   : [0.01, 0.25]
+      'cinema'    : [0.01, 0.25]
+      'commute_unit' : [0.01, 0.5]
+      'commute_city_unit' : [0.01, 0.5]
+      'hospital'  : [0.05, 0.5]
+      'care_home' : [0.05, 1.]
+      'company'   : [0.05, 0.5]
+      'school'    : [0.05, 0.5]
+      'household' : [0.05, 0.5]
+      'university': [0.01, 0.5]
+    alpha_physical : [1.8,3.0]
+    asymptomatic_ratio: [0.05, 0.4]
+    seed_strength : [0.5,1.3]
+    policies:
+      social_distancing:
+          beta_factor: [0.3,0.9]
+      quarantine:
+          household_compliance: [0.2,0.8]
+  # fixed_parameters: None
+
+
+summary_configuration:
+  'age_bins' : [0, 6, 18, 65, 85, 100]
+
+
+
+
+
+
+
+
+
+
+

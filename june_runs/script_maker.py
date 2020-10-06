@@ -125,7 +125,7 @@ class ScriptMaker:
             for module in self.system_configuration["modules_to_load"]
         ]
         if self.virtual_env_path:
-            modules += [f"source {self.virtual_env_path}"]
+            modules += [f"source {self.virtual_env_path}/bin/activate"]
         return modules
 
     def make_python_command(self, script_number):
