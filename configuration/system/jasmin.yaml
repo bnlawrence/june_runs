@@ -1,0 +1,8 @@
+name: jasmin 
+queue: covid_june 
+account: covid_june 
+cores_per_node: 32
+memory_per_node: 256 #GB
+max_time: "72:00:00"
+scheduler: "slurm"
+modules_to_load: ["eb/OpenMPI/gcc/3.1.1", "jaspy/3.7/r20200606"]
