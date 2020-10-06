@@ -124,14 +124,38 @@ class ScriptMaker:
         return python_command
 
     def write_scripts(self):
+        script_paths = []
         for i in range(self.number_of_jobs):
             submission_script = self.make_submission_script(i)
             running_script = self.make_running_script(i)
             save_dir = self._get_script_dir(i)
             assert save_dir.is_dir()
-            with open(save_dir / "submit.sh", "w") as f:
+            script_path = save_dir / "submit.sh"
+            script_paths.append(script_path)
+            with open(script_path, "w") as f:
                 for line in submission_script:
                     f.write(line + "\n")
             with open(save_dir / "run.py", "w") as f:
                 for line in running_script:
                     f.write(line + "\n")
+        # make scrit to submit all jobs
+        submit_all_script = self.make_submit_all_script(script_paths)
+        with open(self.run_directory / "submit_all.sh", "w") as f:
+            for line in submit_all_script:
+                f.write(line + "\n")
+
+    def make_submit_all_script(self, script_paths):
+        script = ["#!/bin/bash -l \n"]
+        scheduler = self.system_configuration["scheduler"]
+        if scheduler == "slurm":
+            submission_command = "sbatch"
+        elif scheduler == "pbs":
+            submission_command = "qsub"
+        elif scheduler == "lsf":
+            submission_command = "bsub"
+        else:
+            raise ValueError(f"Scheduler {scheduler} not yet supported.")
+        for path in script_paths:
+            script += [f"{submission_command} {path}"]
+        return script
+
