@@ -1,5 +1,6 @@
 import json
 import h5py
+from pathlib import Path
 
 from june.domain import Domain, generate_super_areas_to_domain_dict
 from june.mpi_setup import mpi_rank, mpi_size
@@ -18,16 +19,18 @@ from june_runs.setters import (
 
 
 class Runner:
-    def __init__(self, parameter_file):
-        with open(parameter_file, "r") as f:
-            self.parameters = json.load(f)
+    def __init__(self, run_config):
+        with open(run_config, "r") as f:
+            run_config = json.load(f)
+        self.paths = run_config["paths"]
+        self.parameters = run_config["parameters"]
 
     def generate_domain(self):
         """
         Given the current mpi rank, generates a split of the world (domain) from an hdf5 world.
         If mpi_size is 1 this will return the entire world.
         """
-        with h5py.File(self.parameters["world_path"], "r") as f:
+        with h5py.File(self.paths["world_path"], "r") as f:
             n_super_areas = f["geography"].attrs["n_super_areas"]
         super_areas_to_domain_dict = generate_super_areas_to_domain_dict(
             number_of_super_areas=n_super_areas, number_of_domains=mpi_size
@@ -35,7 +38,7 @@ class Runner:
         domain = Domain.from_hdf5(
             domain_id=mpi_rank,
             super_areas_to_domain_dict=super_areas_to_domain_dict,
-            hdf5_file_path=self.parameters["world_path"],
+            hdf5_file_path=self.paths["world_path"],
         )
         return domain
 
@@ -67,14 +70,14 @@ class Runner:
 
     def generate_policies(self):
         policy_setter = PolicySetter.from_parameters(
-            baseline_policy_path=self.parameters["baseline_policy_path"],
+            baseline_policy_path=self.paths["baseline_policy_path"],
             policies_to_modify=self.parameters["policies"],
         )
         return policy_setter.make_policies()
 
     def generate_record(self):
         record = Record(
-            record_path=self.parameters["save_path"],
+            record_path=self.paths["save_path"],
             record_static_data=True,
             mpi_rank=mpi_rank,
         )
@@ -105,12 +108,12 @@ class Runner:
         record.meta_information(
             comment=self.comment,
             random_state=self.random_seed,
-            number_of_cores=self.system_configuration["cores_per_job"],
+            number_of_cores=mpi_size,
         )
         simulator = Simulator.from_file(
             world=domain,
             interaction=interaction,
-            config_filename=self.paths_configuration["config_path"],
+            config_filename=self.paths["simulation_config_path"],
             leisure=leisure,
             travel=travel,
             infection_seed=infection_seed,

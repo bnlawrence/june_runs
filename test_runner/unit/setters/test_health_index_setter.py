@@ -1,5 +1,5 @@
 from june.infection import HealthIndexGenerator
-from runner.setters import HealthIndexSetter
+from june_runs.setters import HealthIndexSetter
 
 def test__asymptomatic_ratio():
     his = HealthIndexSetter(asymptomatic_ratio=0.6)

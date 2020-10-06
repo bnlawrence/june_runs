@@ -11,7 +11,7 @@ from june.policy import (
     Policies,
     SocialDistancing,
 )
-from runner.setters import PolicySetter
+from june_runs.setters import PolicySetter
 
 test_config = Path(__file__).parent / "test_policy_config.yaml"
 
@@ -37,22 +37,24 @@ def check_policy_change(changed_policy, base_policy, parameters_changed: dict):
 def make_ps():
     with open(test_config) as f:
         baseline_config = yaml.load(f, Loader=yaml.FullLoader)
-    policy_setter = PolicySetter(policies_baseline=baseline_config)
+    policies_to_modify = {
+        "hospitalisation": {"probability_of_care_home_resident_admission": 0.4},
+        "quarantine": {
+            '1': {"n_days": 10, "household_compliance": 0.5},
+            '2': {"compliance": 0.2},
+        },
+        "close_companies": {'3': {"avoid_work_probability": 0.20}},
+    }
+    policy_setter = PolicySetter(
+        policies_baseline=baseline_config, policies_to_modify=policies_to_modify
+    )
     return policy_setter
 
 
 class TestChangePoliciesParameters:
     @pytest.fixture(name="policies", scope="module")
     def make_policies(self, policy_setter):
-        policies_to_modify = {
-            "hospitalisation": {"probability_of_care_home_resident_admission": 0.4},
-            "quarantine": {
-                1: {"n_days": 10, "household_compliance": 0.5},
-                2: {"compliance": 0.2},
-            },
-            "close_companies": {3: {"avoid_work_probability": 0.20}},
-        }
-        policies = policy_setter.make_policies(policies_to_modify)
+        policies = policy_setter.make_policies()
         return policies
 
     @pytest.fixture(name="base", scope="module")
@@ -98,64 +100,3 @@ class TestChangePoliciesParameters:
 
     # TODO: extend tests to all policy types.
 
-
-class TestMakeLockdownParameters:
-    @pytest.fixture(name="lockdown_policies", scope="module")
-    def setup(self, policy_setter):
-        soft_lockdown_date = "2020-03-16"
-        hard_lockdown_date = "2020-03-24"
-        lockdown_ratio = 0.5
-        hard_lockdown_policy_parameters = {
-            "quarantine": {"compliance": 0.8, "household_compliance": 0.2},
-            "social_distancing": {"overall_beta_factor": 0.5},
-        }
-        lockdown_policies = policy_setter.build_config_for_lockdown(
-            soft_lockdown_date=soft_lockdown_date,
-            hard_lockdown_date=hard_lockdown_date,
-            lockdown_ratio=lockdown_ratio,
-            hard_lockdown_policy_parameters=hard_lockdown_policy_parameters,
-        )
-        return lockdown_policies
-
-    def test__lockdown_policies(self, lockdown_policies):
-        counter = 0
-        for policy_name in lockdown_policies:
-            if policy_name == "quarantine":
-                for policy in lockdown_policies[policy_name].values():
-                    if (
-                        policy["start_time"]
-                        == datetime.strptime("2020-03-16", "%Y-%m-%d").date()
-                    ):
-                        assert policy["compliance"] == 0.4
-                        assert policy["household_compliance"] == 0.1
-                        counter += 1
-                    elif (
-                        policy["start_time"]
-                        == datetime.strptime("2020-03-24", "%Y-%m-%d").date()
-                    ):
-                        assert policy["compliance"] == 0.8
-                        assert policy["household_compliance"] == 0.2
-                        counter += 1
-            elif policy_name == "social_distancing":
-                for policy in lockdown_policies[policy_name].values():
-                    if (
-                        policy["start_time"]
-                        == datetime.strptime("2020-03-16", "%Y-%m-%d").date()
-                    ):
-                        for group, factor in policy["beta_factors"].items():
-                            if group == "household":
-                                assert factor == 1.0
-                            else:
-                                assert factor == 0.75
-                        counter += 1
-                    elif (
-                        policy["start_time"]
-                        == datetime.strptime("2020-03-24", "%Y-%m-%d").date()
-                    ):
-                        for group, factor in policy["beta_factors"].items():
-                            if group == "household":
-                                assert factor == 1.0
-                            else:
-                                assert factor == 0.5
-                        counter += 1
-        assert counter == 4

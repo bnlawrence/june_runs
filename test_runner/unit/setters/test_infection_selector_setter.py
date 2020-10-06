@@ -1,8 +1,9 @@
-from runner.setters import InfectionSelectorSetter
 from june.infection import InfectionSelector, HealthIndexGenerator
 from june.infection.transmission import TransmissionConstant, TransmissionGamma
 from june.infection.transmission_xnexp import TransmissionXNExp
 from june.demography import Person
+
+from june_runs.setters import InfectionSelectorSetter
 
 def test__infectivity_profile():
     hi = HealthIndexGenerator.from_file()

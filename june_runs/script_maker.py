@@ -40,6 +40,9 @@ class ScriptMaker:
             system_configuration = yaml.load(f, Loader=yaml.FullLoader)
         return system_configuration
 
+    def _get_script_dir(self, script_number):
+        return self.run_directory / f"run_{script_number:03d}"
+
     def calculate_number_of_nodes(self, memory_per_job, cpus_per_job, number_of_jobs):
         cores_per_node = self.system_configuration["cores_per_node"]
         memory_per_node = self.system_configuration["memory_per_node"]
@@ -55,10 +58,11 @@ class ScriptMaker:
         command = self.make_python_command(script_number)
         return header + ["\n"] +  modules_to_load + ["\n"] + command
 
-    def make_running_script(self):
+    def make_running_script(self, script_number):
+        parameters_path =  self._get_script_dir(script_number) / "parameters.json"
         python_script = [
-            "from june_runs import runner\n",
-            "runner = Runner()",
+            "from june_runs import Runner\n",
+            f"runner = Runner(\"{parameters_path}\")",
             "runner.run()",
         ]
         return python_script
@@ -101,7 +105,7 @@ class ScriptMaker:
         return modules
 
     def make_python_command(self, script_number):
-        script_path = self.run_directory / f"run_{script_number:03d}"
+        script_path = self._get_script_dir(script_number)
         python_script_path = script_path / "run.py"
         python_command = [
             f"mpirun -np {self.cpus_per_job} python3 {python_script_path}"
@@ -111,8 +115,8 @@ class ScriptMaker:
     def write_scripts(self):
         for i in range(self.number_of_jobs):
             submission_script = self.make_submission_script(i)
-            running_script = self.make_running_script()
-            save_dir = self.run_directory / f"run_{i:03d}"
+            running_script = self.make_running_script(i)
+            save_dir = self._get_script_dir(i)
             assert save_dir.is_dir()
             with open(save_dir / "submit.sh", "w") as f:
                 for line in submission_script:

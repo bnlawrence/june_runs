@@ -2,7 +2,7 @@ from datetime import datetime
 
 from june.infection_seed import InfectionSeed
 from june.infection import HealthIndexGenerator, InfectionSelector
-from runner.setters import InfectionSeedSetter
+from june_runs.setters import InfectionSeedSetter
 
 
 def test__set_parameters():

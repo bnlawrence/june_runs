@@ -39,7 +39,7 @@ class PolicySetter:
                     ):
                         raise ValueError("policy config file not valid.")
                     if policy in self.policies_to_modify:
-                        if policy_i in self.policies_to_modify[policy]:
+                        if str(policy_i) in self.policies_to_modify[policy]:
                             policy_data_modified = deepcopy(policy_data_i)
                             tomodify = self.policies_to_modify[policy][str(policy_i)]
                             for parameter, parameter_value in tomodify.items():
