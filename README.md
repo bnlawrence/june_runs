@@ -53,7 +53,7 @@ and we can also fix the seed for reproducibility.
 random_seed: "random"
 ```
 
-This is the part where we specify the paths. First we give a ``run_name``, if the ``save_path`` is set to ``"auto"`` then the working directory and the results will be saved in the ``june_runs/run_name``path. Don't worry! If the folder already exists then they will be saved to ``run_name_1``, etc. so that no work is lost.`
+This is the part where we specify the paths. First we give a ``run_name``, if the ``save_path`` is set to ``"auto"`` then the working directory and the results will be saved in the ``june_runs/run_name``path. Don't worry! If the folder already exists then they will be saved to ``run_name_1``, etc. so that no work is lost.
 The ``world_path`` should point to the world file we want to run on. Finally, the baseline paths are the paths to the baseline interaction and policy configs. Parameters of these files might be altered using the ``parameter_configuration`` below. A virtual environment to load can also be specified, keep in mind that this is the path to the environment so in this case it will resolve to ``source june_runs_path/june_venv/bin/activate``.
 Path configuration also supports place holders with the use of ``@``.
 
@@ -68,12 +68,14 @@ paths_configuration: # use @ as placeholder
   basline_policy_path: "@june_runs_path/configuration/default_baseline_configs/policy.yaml"
   simulation_config_path: "default"
   virtual_env_path: "@june_runs_path/june_venv"
+```
 
 
 Finally, we need to tell the runner which parameter should it vary across all runs. There is a variety of sampling techniques available: grid, regular_grid, and latin hypercube. In this case, we run a lth, and all the parameters that are given as a list of two numbers are interpreted as the bounds of the hypercube dimension. If a parameter is given as a scalar, then that parameter is fixed across all runs.
 
 There is a special feature in ``policies`` which allow the user to define a soft-hard lockdown transition, specifying the date and the relative strength of the lockdowns.
 
+```yaml
 parameter_configuration:
   parameters_to_run: "all"
   sampling_type: latin_hypercube # available: [latin_hypercube, grid, regular_grid]
