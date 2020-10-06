@@ -87,7 +87,6 @@ class ScriptMaker:
                 f"#SBATCH -A {account}",
                 f"#SBATCH -o {stdout_path}.out",
                 f"#SBATCH -e {stdout_path}.err",
-                f"#SBATCH --exclusive",
                 f"#SBATCH -t {max_time}",
             ]
         elif scheduler == "pbs":
