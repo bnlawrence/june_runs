@@ -20,10 +20,13 @@ class ScriptMaker:
         memory_per_job: int = 100,
         cpus_per_job: int = 32,
         number_of_jobs=250,
+        virtual_env_path = None,
     ):
         if system not in supported_systems:
             raise ValueError(f"System {system} not supported yet.")
         self.run_directory = Path(run_directory)
+        self.stdout_directory = self.run_directory / "stdout"
+        self.stdout_directory.mkdir(exist_ok=True, parents=True)
         self.job_name = job_name
         self.system_configuration = self._load_system_configuration(system)
         self.nodes_required = self.calculate_number_of_nodes(
@@ -33,6 +36,7 @@ class ScriptMaker:
         )
         self.cpus_per_job = cpus_per_job
         self.number_of_jobs = number_of_jobs
+        self.virtual_env_path = virtual_env_path
 
     def _load_system_configuration(self, system):
         system_configuration_path = configuration_path / f"system/{system}.yaml"
@@ -72,6 +76,7 @@ class ScriptMaker:
         account = self.system_configuration["account"]
         max_time = self.system_configuration["max_time"]
         scheduler = self.system_configuration["scheduler"]
+        stdout_path = self.stdout_directory / f"run_{script_number:03d}"
         if scheduler == "slurm":
             header = [
                 "#!/bin/bash -l",
@@ -80,6 +85,8 @@ class ScriptMaker:
                 f"#SBATCH -J {self.job_name}_{script_number:03d}",
                 f"#SBATCH -p {queue}",
                 f"#SBATCH -A {account}",
+                f"#SBATCH -o {stdout_path}.out",
+                f"#SBATCH -e {stdout_path}.err",
                 f"#SBATCH --exclusive",
                 f"#SBATCH -t {max_time}",
             ]
@@ -92,6 +99,8 @@ class ScriptMaker:
                 f"#PBS -l walltime={max_time}",
                 f"#PBS -q {queue}",
                 f"#PBS -A {account}",
+                f"#PBS -o {stdout_path}.out",
+                f"#PBS -e {stdout_path}.err",
             ]
         elif scheduler == "lsf":
             header = [
@@ -101,6 +110,8 @@ class ScriptMaker:
                 f"#BSUB -J {self.job_name}_{script_number:03d}",
                 f"#BSUB -q {queue}",
                 f"#BSUB -P {account}",
+                f"#BSUB -o {stdout_path}.out",
+                f"#BSUB -e {stdout_path}.err",
                 f"#BSUB -x",
                 f"#BSUB -W {max_time}",
             ]
@@ -113,13 +124,15 @@ class ScriptMaker:
             f"module load {module}"
             for module in self.system_configuration["modules_to_load"]
         ]
+        if self.virtual_env_path:
+            modules += [f"source {self.virtual_env_path}"]
         return modules
 
     def make_python_command(self, script_number):
         script_path = self._get_script_dir(script_number)
         python_script_path = script_path / "run.py"
         python_command = [
-            f"mpirun -np {self.cpus_per_job} python3 {python_script_path}"
+            f"mpirun -np {self.cpus_per_job} python3 -u {python_script_path}"
         ]
         return python_command
 
