@@ -1,0 +1,57 @@
+system_configuration:
+  system_to_use: cosma5
+  memory_per_job: 100 # GB
+  cpus_per_job: 32
+
+purpose_of_the_run: "this is an example run."
+random_seed: "random"
+
+paths_configuration: # use @ as placeholder
+  run_name: "adam" # will be used to store results
+  june_runs_path: "auto"
+  save_path: "auto" # if auto, it will be june_runs_path/run_name (it won't override anything)
+  world_path: "@june_runs_path/june_worlds/tests.hdf5" 
+  # if these are defults, they will be picked from the june_runs_path/configuration/default_baseline_configs
+  baseline_interaction_path: "default"
+  basline_policy_path: "@june_runs_path/configuration/default_baseline_configs/policy.yaml"
+  simulation_config_path: "default"
+  virtual_env_path: None
+
+parameter_configuration:
+  parameters_to_run: "all"
+  sampling_type: latin_hypercube # available: [latin_hypercube, grid, regular_grid]
+  parameters:
+    n_samples: 250
+    interaction:
+      betas:
+        pub       : [0.01, 0.25]
+        grocery   : [0.01, 0.25]
+        cinema    : [0.01, 0.25]
+        city_transport : [0.01, 0.5]
+        inter_city_transport : [0.01, 0.5]
+        hospital  : [0.05, 0.5]
+        care_home : [0.05, 1.]
+        company   : [0.05, 0.5]
+        school    : [0.05, 0.5]
+        household : [0.05, 0.5]
+        university: [0.01, 0.5]
+      alpha_physical : [1.8,3.0]
+      susceptibilities:
+        "0-13" : 0.5
+        "13-150" : 1.0
+  
+    infection:
+      asymptomatic_ratio: [0.05, 0.4]
+      seed_strength : [0.5,1.3]
+      infectivity_profile: xnexp
+  
+    policies:
+      lockdown:
+        soft_lockdown_date: 2020-03-16
+        hard_lockdown_date: 2020-03-24
+        lockdown_ratio: 0.5 # relative strength of lockdowns
+        hard_lockdown_policy_parameters:
+          social_distancing:
+            overall_beta_factor: [0.3, 0.9]
+          quarantine: 
+            overall_compliance: [0.2, 0.8]

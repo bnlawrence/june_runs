@@ -5,3 +5,4 @@ SALib
 sklearn
 pytest
 pyYAML
+psutil
