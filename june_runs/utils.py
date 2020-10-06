@@ -14,21 +14,42 @@ def parse_paths(paths_configuration):
     """
     Substitutes placeholders in config.
     """
-    ret = {}
     june_runs_path = Path(__file__).parent.parent
-    if paths_configuration["base_path"] == "auto":
-        ret["june_runs_path"] = june_runs_path
-    ret["run_name"] = paths_configuration["run_name"]
+    default_configs_path = paths.configs_path
+    # default configs
+    # june default configs path
     names_with_placeholder = []
     names_without_placeholder = []
+    ret = {}
+    if paths_configuration.get("june_runs_path", "auto") == "auto":
+        paths_configuration["june_runs_path"] = june_runs_path.as_posix()
+    else:
+        june_runs_path = Path(paths_configuration["june_runs_path"])
+    if paths_configuration.get("save_path", "auto") == "auto":
+        paths_configuration["save_path"] = (june_runs_path / paths_configuration["run_name"]).as_posix()
+    if paths_configuration.get("baseline_policy_path", "default") == "default":
+        paths_configuration["baseline_policy_path"] = (
+            june_runs_path / "configuration/default_baseline_configs/policy.yaml"
+        ).as_posix()
+    if paths_configuration.get("baseline_interaction_path", "default") == "default":
+        paths_configuration["baseline_interaction_path"] = (
+            june_runs_path / "configuration/default_baseline_configs/interaction.yaml"
+        ).as_posix()
+    if paths_configuration.get("simulation_config_path", "default"):
+        paths_configuration["simulation_config_path"] = (
+            june_runs_path
+            / "configuration/default_baseline_configs/simulation_config.yaml"
+        ).as_posix()
     for key, value in paths_configuration.items():
-        if type(value) == str and "path" in key:
-            if "@" in value:
+        if "path" in key:
+            if "@" in str(value):
                 names_with_placeholder.append(key)
             else:
                 names_without_placeholder.append(key)
 
     for name in names_without_placeholder:
+        if name in ["default", "auto"]:
+            raise ValueError("path value incorrect parsed, please submit an issue")
         ret[name] = Path(paths_configuration[name])
     if names_with_placeholder:
         for name in names_with_placeholder:
@@ -38,47 +59,34 @@ def parse_paths(paths_configuration):
             for split in value_split:
                 if "@" in split:
                     placeholder_name = split[1:]
-                    reconstructed.append(ret[placeholder_name].as_posix())
+                    if placeholder_name == "june_runs_path":
+                        reconstructed.append(june_runs_path.as_posix())
+                    else:
+                        reconstructed.append(ret[placeholder_name].as_posix())
                 else:
                     reconstructed.append(split)
             reconstructed = "/".join(reconstructed)
             ret[name] = Path(reconstructed)
+    ret["run_name"] = paths_configuration["run_name"]
     run_name = ret["run_name"]
-    ret["base_path"] = june_runs_path / run_name
-    if ret["base_path"].is_dir():
+    if ret["save_path"].is_dir():
         i = 1
-        newpath = Path(str(ret["base_path"]) + f"_{i}")
+        newpath = Path(str(ret["save_path"]) + f"_{i}")
         while newpath.is_dir():
             i += 1
-            newpath = Path(str(ret["base_path"]) + f"_{i}")
+            newpath = Path(str(ret["save_path"]) + f"_{i}")
         print(f"{run_name} has already a results folder, saving to {newpath}")
-        ret["base_path"] = newpath
-    ret["base_path"].mkdir(exist_ok=True, parents=True)
+        ret["save_path"] = newpath
+    ret["save_path"].mkdir(exist_ok=True, parents=True)
 
-    ret["data_path"] = ret["base_path"] / "data"
+    ret["data_path"] = ret["save_path"] / "data"
     ret["data_path"].mkdir(exist_ok=True, parents=True)
 
-    ret["summary_path"] = ret["base_path"] / "summaries"
+    ret["summary_path"] = ret["save_path"] / "summaries"
     ret["summary_path"].mkdir(exist_ok=True, parents=True)
 
-    ret["runs_path"] = ret["base_path"] / "runs"
+    ret["runs_path"] = ret["save_path"] / "runs"
     ret["runs_path"].mkdir(exist_ok=True, parents=True)
-
-    if "baseline_policy_path" not in ret or ret["baseline_policy_path"] == "default":
-        ret["baseline_policy_path"] = paths.configs_path / "default/policy/policy.yaml"
-    if (
-        "baseline_interaction_path" not in ret
-        or ret["baseline_interaction_path"] == "default"
-    ):
-        ret["baseline_interaction_path"] = (
-            paths.configs_path / "default/interaction/interaction.yaml"
-        )
-    if (
-        "simulation_config_path" not in ret
-        or ret["simulation_config_path"] == "default"
-    ):
-        ret["simulation_config_path"] = june_runs_path / "config.yaml"
-    print(ret)
     return ret
 
 
