@@ -2,6 +2,9 @@ system_configuration:
   system_to_use: jasmin
   memory_per_job: 10 # GB
   cpus_per_job: 10
+  extra_header_lines: []
+  extra_module_lines: ["source activate @june_runs_path/june_venv"]
+  extra_command_lines: ["echo \"job done\""]
 
 purpose_of_the_run: "this is an example run."
 random_seed: "random"
