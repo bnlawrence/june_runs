@@ -124,7 +124,7 @@ class ScriptMaker:
             f"module load {module}"
             for module in self.system_configuration["modules_to_load"]
         ]
-        if self.virtual_env_path:
+        if str(self.virtual_env_path) != "None":
             modules += [f"source {self.virtual_env_path}/bin/activate"]
         return modules
 
