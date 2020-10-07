@@ -23,6 +23,14 @@ class PolicySetter:
             policies_baseline=policies_baseline, policies_to_modify=policies_to_modify
         )
 
+    def _set_beta_factors(self, policy_data, beta_factor):
+        for beta in policy_data["beta_factors"]:
+            if beta == "household":
+                continue
+            policy_data["beta_factors"][beta] = (
+                beta_factor 
+            )
+
     def make_policies(self):
         policies = []
         for policy, policy_data in self.policies_baseline.items():
@@ -39,6 +47,13 @@ class PolicySetter:
                             policy_data_modified = deepcopy(policy_data_i)
                             tomodify = self.policies_to_modify[policy][str(policy_i)]
                             for parameter, parameter_value in tomodify.items():
+                                if (
+                                    policy == "social_distancing"
+                                    and parameter == "beta_factors"
+                                    and type(parameter_value) == float
+                                ):
+                                    self._set_beta_factors(policy_data_modified, parameter_value)
+                                    continue
                                 policy_data_modified[parameter] = parameter_value
                         else:
                             policy_data_modified = policy_data_i
