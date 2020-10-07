@@ -1,0 +1,29 @@
+system_configuration:
+  system_to_use: jasmin 
+  memory_per_job: 10 # GB
+  cpus_per_job: 60
+
+purpose_of_the_run: "baseline run to check effectivity of circuit breakers"
+random_seed: "random"
+
+paths_configuration: # use @ as placeholder
+  run_name: "beyonce" # will be used to store results
+  june_runs_path: "auto"
+  save_path: "/gws/nopw/j04/covid_june/arnau/beyonce" # if auto, it will be june_runs_path/run_name (it won't override anything)
+  world_path: "/gws/nopw/j04/covid_june/june_worlds/england.hdf5" 
+  # if these are defults, they will be picked from the june_runs_path/configuration/default_baseline_configs
+  baseline_interaction_path: "default"
+  basline_policy_path: "@june_runs_path/configuration/run_sets/beyonce/baseline_policy.yaml"
+  simulation_config_path: "default"
+  virtual_env_path: None
+
+parameter_configuration:
+  parameters_to_run: [2]
+  sampling_type: file # available: [latin_hypercube, grid, regular_grid, file]
+  parameters:
+    path: "@june_runs_path/configuration/run_sets/beyonce/parameters.json"
+    interaction:
+      susceptibilities:
+        "0-150" : 1.0
+    infection:
+      infectivity_profile: xnexp

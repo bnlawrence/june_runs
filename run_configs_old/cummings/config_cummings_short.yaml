@@ -8,7 +8,7 @@ activity_to_super_groups:
   medical_facility: ['hospitals']
 
 time:
-  total_days: 35
+  total_days: 36
   initial_day: "2020-02-28" 
   step_duration: 
       weekday:
@@ -36,6 +36,7 @@ time:
           3: ['medical_facility', 'residence']
 
 
+# note we currently do not save checkpoints for memroy reasons
 #checkpoint_dates:
 #  2020-05-06
 #  2020-07-01

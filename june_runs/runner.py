@@ -26,7 +26,7 @@ def set_random_seed(seed=999):
     Sets global seeds for testing in numpy, random, and numbaized numpy.
     """
 
-    @nb.njit(cache=True)
+    @nb.njit()
     def set_seed_numba(seed):
         random.seed(seed)
         np.random.seed(seed)
