@@ -40,10 +40,11 @@ def make_ps():
     policies_to_modify = {
         "hospitalisation": {"probability_of_care_home_resident_admission": 0.4},
         "quarantine": {
-            '1': {"n_days": 10, "household_compliance": 0.5},
-            '2': {"compliance": 0.2},
+            "1": {"n_days": 10, "household_compliance": 0.5},
+            "2": {"compliance": 0.2},
         },
-        "close_companies": {'3': {"avoid_work_probability": 0.20}},
+        "close_companies": {"3": {"avoid_work_probability": 0.20}},
+        "social_distancing": {"2": {"start_time": "2020-03-24", "beta_factors": 0.6}},
     }
     policy_setter = PolicySetter(
         policies_baseline=baseline_config, policies_to_modify=policies_to_modify
@@ -98,5 +99,26 @@ class TestChangePoliciesParameters:
                     counter += 1
         assert counter == 1
 
-    # TODO: extend tests to all policy types.
+    def test__social_distancing_policy(self, policies, base):
+        counter = 0
+        for policy1, policy2 in zip(policies, base):
+            if isinstance(policy1, SocialDistancing):
+                assert isinstance(policy2, SocialDistancing)
+                if policy1.start_time == datetime.strptime("2020-03-24", "%Y-%m-%d"):
+                    assert policy2.start_time == datetime.strptime(
+                        "2020-03-24", "%Y-%m-%d"
+                    )
+                    assert set(policy1.beta_factors.keys()) == set(policy2.beta_factors.keys())
+                    for beta1, beta2 in zip(policy1.beta_factors, policy2.beta_factors):
+                        if beta1 == "household":
+                            assert policy1.beta_factors[beta1] == 1.0
+                        else:
+                            assert (
+                                policy1.beta_factors[beta1] == 0.6
+                            )
+                        if beta2 == "household":
+                            assert policy2.beta_factors[beta2] == 1.0
+                        else:
+                            assert policy2.beta_factors[beta2] == 0.75
 
+    # TODO: extend tests to all policy types.
