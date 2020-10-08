@@ -1,7 +1,7 @@
 import yaml
 from pathlib import Path
 
-supported_systems = ["cosma5", "cosma6", "cosma7", "jasmin", "archer"]
+supported_systems = ["cosma5", "cosma6", "cosma7", "jasmin", "archer", "hartree"]
 
 from june_runs.paths import configuration_path
 
@@ -110,13 +110,14 @@ class ScriptMaker:
             header = [
                 "#!/bin/bash -l",
                 "",
+                f'#BSUB -R "span[ptile={self.cpus_per_job}]"',
                 f"#BSUB -n {self.cpus_per_job}",
                 f"#BSUB -J {self.job_name}_{script_number:03d}",
                 f"#BSUB -q {queue}",
                 f"#BSUB -P {account}",
                 f"#BSUB -o {stdout_path}.out",
                 f"#BSUB -e {stdout_path}.err",
-                f"#BSUB -x",
+                # f"#BSUB -x",
                 f"#BSUB -W {max_time}",
             ]
         else:
@@ -130,6 +131,8 @@ class ScriptMaker:
             f"module load {module}"
             for module in self.system_configuration["modules_to_load"]
         ]
+        if self.system_configuration["name"] == "hartree":
+            modules = ["source /etc/profile.d/modules.sh"] + modules
         if self.extra_module_lines:
             modules += self.extra_module_lines
         return modules
@@ -173,7 +176,10 @@ class ScriptMaker:
         elif scheduler == "pbs":
             submission_command = "qsub"
         elif scheduler == "lsf":
-            submission_command = "bsub"
+            if self.system_configuration["name"] == "hartree":
+                submission_command = "bsub <"
+            else:
+                submission_command = "bsub"
         else:
             raise ValueError(f"Scheduler {scheduler} not yet supported.")
         for path in script_paths:
