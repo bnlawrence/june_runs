@@ -116,6 +116,7 @@ class RunSetup:
             )
             ret["random_seed"] = random_seed
             ret["parameters"] = parameter
+            ret["n_days"] = self.parameters["n_days"]
             ret["paths"] = {
                 "june_runs_path": self.paths["june_runs_path"],
                 "save_path": str(save_path),

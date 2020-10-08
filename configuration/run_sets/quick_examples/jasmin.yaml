@@ -22,6 +22,7 @@ paths_configuration: # use @ as placeholder
 
 parameter_configuration:
   parameters_to_run: "all"
+  n_days: 10
   sampling_type: latin_hypercube # available: [latin_hypercube, grid, regular_grid]
   parameters:
     n_samples: 10

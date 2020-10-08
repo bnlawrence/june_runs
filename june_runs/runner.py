@@ -3,6 +3,7 @@ import h5py
 import numba as nb
 import random
 import numpy as np
+import datetime
 from pathlib import Path
 
 from june.domain import Domain, generate_super_areas_to_domain_dict
@@ -46,6 +47,7 @@ class Runner:
         self.parameters = run_config["parameters"]
         self.purpose_of_the_run = run_config["purpose_of_the_run"]
         self.run_number = run_config["run_number"]
+        self.n_days = run_config["n_days"]
 
     def generate_domain(self):
         """
@@ -147,6 +149,9 @@ class Runner:
             policies=policies,
             record=record,
         )
+        # change number of days, this can only be done like this for now
+        simulator.timer.total_days = self.n_days
+        simulator.timer.final_date = simulator.timer.initial_date + datetime.timedelta(days=self.n_days)
         return simulator
 
     def run(self):
