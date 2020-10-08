@@ -120,13 +120,16 @@ class RunSetup:
                 "june_runs_path": self.paths["june_runs_path"],
                 "save_path": str(save_path),
                 "world_path": self.paths["world_path"],
-                "summary_path": self.paths["summary_path"],
+                "results_path": self.paths["results_path"] / f"run_{i:03d}",
                 "baseline_policy_path": self.paths["baseline_policy_path"],
                 "baseline_interaction_path": self.paths["baseline_interaction_path"],
                 "simulation_config_path": self.paths["simulation_config_path"],
             }
+            ret["paths"]["results_path"].mkdir(exist_ok=True, parents=True)
             save_path.mkdir(exist_ok=True, parents=True)
             with open(save_path / "parameters.json", "w") as f:
+                json.dump(ret, f, indent=4, default=str)
+            with open(ret["paths"]["results_path"] / "parameters.json", "w") as f:
                 json.dump(ret, f, indent=4, default=str)
 
 

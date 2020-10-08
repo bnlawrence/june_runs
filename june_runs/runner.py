@@ -10,7 +10,7 @@ from june.mpi_setup import mpi_rank, mpi_size
 from june.groups.leisure import generate_leisure_for_config
 from june.groups.travel import Travel
 from june.records import Record
-from june.records.records_writer import combine_summaries
+from june.records.records_writer import combine_records
 from june.simulator import Simulator
 
 from june_runs.setters import (
@@ -152,7 +152,9 @@ class Runner:
     def run(self):
         simulator = self.generate_simulator()
         simulator.run()
-        full_summary_path = Path(self.paths["summary_path"])/ f"summary_{self.run_number:03d}.csv"
-        combine_summaries(Path(self.paths["save_path"]),
-                remove_left_overs=False,
-                full_summary_save_path=full_summary_path)
+        if mpi_rank == 0:
+            self.save_results()
+
+    def save_results(self):
+        results_path = self.paths["results_path"]
+        combine_records(Path(self.paths["save_path"]), remove_left_overs=False, save_dir=results_path)
