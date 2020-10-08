@@ -111,13 +111,14 @@ class ScriptMaker:
                 "#!/bin/bash -l",
                 "",
                 f'#BSUB -R "span[ptile={self.cpus_per_job}]"',
+                # f'#BSUB -R "rusage[mem={self.memory_per_job}000]"', 
                 f"#BSUB -n {self.cpus_per_job}",
                 f"#BSUB -J {self.job_name}_{script_number:03d}",
                 f"#BSUB -q {queue}",
                 f"#BSUB -P {account}",
                 f"#BSUB -o {stdout_path}.out",
                 f"#BSUB -e {stdout_path}.err",
-                # f"#BSUB -x",
+                f"#BSUB -x",
                 f"#BSUB -W {max_time}",
             ]
         else:
@@ -132,6 +133,7 @@ class ScriptMaker:
             for module in self.system_configuration["modules_to_load"]
         ]
         if self.system_configuration["name"] == "hartree":
+            # need to load the actual modules script
             modules = ["source /etc/profile.d/modules.sh"] + modules
         if self.extra_module_lines:
             modules += self.extra_module_lines
@@ -177,6 +179,7 @@ class ScriptMaker:
             submission_command = "qsub"
         elif scheduler == "lsf":
             if self.system_configuration["name"] == "hartree":
+                # need arrow to direct script
                 submission_command = "bsub <"
             else:
                 submission_command = "bsub"
