@@ -1,0 +1,8 @@
+name: hartree
+queue: scafellpikeSKL # scafellpikeKNL is the other queue with more core, but slower cores
+account: HT03340
+cores_per_node: 32 # 64 for KNL
+memory_per_node: 192 # 384 for KNL
+max_time: "48:00"
+scheduler: "lsf"
+modules_to_load: ["use.scafellpike", "utilities-gcc", "openmpi-gcc/2.1.1"]
