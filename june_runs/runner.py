@@ -97,7 +97,7 @@ class Runner:
     def generate_policies(self):
         policy_setter = PolicySetter.from_parameters(
             baseline_policy_path=self.paths["baseline_policy_path"],
-            policies_to_modify=self.parameters["policies"],
+            policies_to_modify=self.parameters.get("policies", None),
         )
         return policy_setter.make_policies()
 
