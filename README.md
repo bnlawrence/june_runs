@@ -41,7 +41,11 @@ system_configuration:
   system_to_use: jasmin
   memory_per_job: 10 # GB
   cpus_per_job: 10
+  extra_header_lines: []
+  extra_module_lines: ["source activate @june_runs_path/june_venv"]
+  extra_command_lines: ["echo \"job done\""]
 ```
+we also have options to append commands to the script header, module loading, or at the bottom where the actual commands are.
 
 Next is a small line explaining why are we running this set of simulations.
 

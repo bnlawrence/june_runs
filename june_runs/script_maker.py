@@ -20,7 +20,9 @@ class ScriptMaker:
         memory_per_job: int = 100,
         cpus_per_job: int = 32,
         number_of_jobs=250,
-        virtual_env_path = None,
+        extra_header_lines = None,
+        extra_module_lines = None,
+        extra_command_lines =None,
     ):
         if system not in supported_systems:
             raise ValueError(f"System {system} not supported yet.")
@@ -36,7 +38,9 @@ class ScriptMaker:
         )
         self.cpus_per_job = cpus_per_job
         self.number_of_jobs = number_of_jobs
-        self.virtual_env_path = virtual_env_path
+        self.extra_header_lines = extra_header_lines
+        self.extra_module_lines = extra_module_lines
+        self.extra_command_lines = extra_command_lines
 
     def _load_system_configuration(self, system):
         system_configuration_path = configuration_path / f"system/{system}.yaml"
@@ -117,6 +121,8 @@ class ScriptMaker:
             ]
         else:
             raise ValueError(f"Scheduler {scheduler} not yet supported.")
+        if self.extra_header_lines:
+            header += self.extra_header_lines
         return header
 
     def make_script_modules(self):
@@ -124,8 +130,8 @@ class ScriptMaker:
             f"module load {module}"
             for module in self.system_configuration["modules_to_load"]
         ]
-        if str(self.virtual_env_path) != "None":
-            modules += [f"source {self.virtual_env_path}/bin/activate"]
+        if self.extra_module_lines:
+            modules += self.extra_module_lines
         return modules
 
     def make_python_command(self, script_number):
@@ -134,6 +140,8 @@ class ScriptMaker:
         python_command = [
             f"mpirun -np {self.cpus_per_job} python3 -u {python_script_path}"
         ]
+        if self.extra_command_lines:
+            python_command += self.extra_command_lines
         return python_command
 
     def write_scripts(self):

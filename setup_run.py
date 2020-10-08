@@ -24,14 +24,10 @@ class RunSetup:
             self.parameters, paths=self.paths
         )
         system_configuration = run_configuration["system_configuration"]
-        self.script_maker = ScriptMaker(
-            system=system_configuration["system_to_use"],
-            run_directory=self.paths["runs_path"],
-            job_name=self.paths["run_name"],
-            memory_per_job=system_configuration["memory_per_job"],
-            cpus_per_job=system_configuration["cpus_per_job"],
+        self.script_maker = self.init_script_maker(
+            system_configuration,
+            self.paths,
             number_of_jobs=len(self.parameter_generator),
-            virtual_env_path=self.paths["virtual_env_path"],
         )
 
     @staticmethod
@@ -68,6 +64,44 @@ class RunSetup:
         else:
             raise NotImplementedError
         return parameter_generator
+
+    @classmethod
+    def init_script_maker(cls, system_configuration, paths, number_of_jobs):
+        extra_header_lines = cls._process_placeholders_in_lines(
+            lines=system_configuration.get("extra_header_lines", []), paths=paths
+        )
+        extra_module_lines = cls._process_placeholders_in_lines(
+            lines=system_configuration.get("extra_module_lines", []), paths=paths
+        )
+        extra_command_lines = cls._process_placeholders_in_lines(
+            lines=system_configuration.get("extra_command_lines", []), paths=paths
+        )
+        return ScriptMaker(
+            system=system_configuration["system_to_use"],
+            run_directory=paths["runs_path"],
+            job_name=paths["run_name"],
+            memory_per_job=system_configuration["memory_per_job"],
+            cpus_per_job=system_configuration["cpus_per_job"],
+            number_of_jobs=number_of_jobs,
+            extra_header_lines=extra_header_lines,
+            extra_module_lines=extra_module_lines,
+            extra_command_lines=extra_command_lines,
+        )
+
+    @classmethod
+    def _process_placeholders_in_lines(cls, lines, paths):
+        ret = []
+        for line in lines:
+            line2 = []
+            for word in line.split(" "):
+                if "@" in word:
+                    placeholder = word.split("/")[0].split("@")[-1]
+                    tail = "/".join(word.split("/")[1:])
+                    word = paths[placeholder] / tail
+                line2.append(str(word))
+            line2 = " ".join(line2)
+            ret.append(line2)
+        return ret
 
     def save_run_parameters(self):
         for i, parameter in enumerate(self.parameter_generator):
