@@ -6,8 +6,8 @@ import numpy as np
 import datetime
 from pathlib import Path
 
-from june.domain import Domain, generate_super_areas_to_domain_dict
-from june.mpi_setup import mpi_rank, mpi_size
+from june.domain import Domain, generate_domain_split
+from june.mpi_setup import mpi_rank, mpi_size, mpi_comm
 from june.groups.leisure import generate_leisure_for_config
 from june.groups.travel import Travel
 from june.records import Record
@@ -21,6 +21,11 @@ from june_runs.setters import (
     InfectionSelectorSetter,
     HealthIndexSetter,
 )
+
+
+def keys_to_int(x):
+    return {int(k): v for k, v in x.items()}
+
 
 def set_random_seed(seed=999):
     """
@@ -36,6 +41,7 @@ def set_random_seed(seed=999):
     set_seed_numba(seed)
     random.seed(seed)
     return
+
 
 class Runner:
     def __init__(self, run_config):
@@ -54,11 +60,33 @@ class Runner:
         Given the current mpi rank, generates a split of the world (domain) from an hdf5 world.
         If mpi_size is 1 this will return the entire world.
         """
-        with h5py.File(self.paths["world_path"], "r") as f:
-            n_super_areas = f["geography"].attrs["n_super_areas"]
-        super_areas_to_domain_dict = generate_super_areas_to_domain_dict(
-            number_of_super_areas=n_super_areas, number_of_domains=mpi_size
-        )
+        save_path = Path(self.paths["save_path"])
+        if mpi_rank == 0:
+            with h5py.File(self.paths["world_path"], "r") as f:
+                super_area_names = [
+                    name.decode() for name in f["geography"]["super_area_name"]
+                ]
+                super_area_ids = [
+                    int(sa_id) for sa_id in f["geography"]["super_area_id"]
+                ]
+            super_area_name_to_id = {
+                key: value for key, value in zip(super_area_names, super_area_ids)
+            }
+
+            # make dictionary super_area_id -> domain
+            super_area_names_to_domain_dict = generate_domain_split(
+                super_areas=super_area_names, number_of_domains=mpi_size
+            )
+            super_areas_to_domain_dict = {}
+            for key, value in super_area_names_to_domain_dict.items():
+                super_areas_to_domain_dict[super_area_name_to_id[key]] = value
+
+            with open(save_path / "super_areas_to_domain.json", "w") as f:
+                json.dump(super_areas_to_domain_dict, f)
+        mpi_comm.Barrier() # wait until rank 0 writes domain partition
+        if mpi_rank > 0:
+            with open(save_path / "super_areas_to_domain.json", "r") as f:
+                super_areas_to_domain_dict = json.load(f, object_hook=keys_to_int)
         domain = Domain.from_hdf5(
             domain_id=mpi_rank,
             super_areas_to_domain_dict=super_areas_to_domain_dict,
@@ -151,7 +179,9 @@ class Runner:
         )
         # change number of days, this can only be done like this for now
         simulator.timer.total_days = self.n_days
-        simulator.timer.final_date = simulator.timer.initial_date + datetime.timedelta(days=self.n_days)
+        simulator.timer.final_date = simulator.timer.initial_date + datetime.timedelta(
+            days=self.n_days
+        )
         return simulator
 
     def run(self):
@@ -162,4 +192,8 @@ class Runner:
 
     def save_results(self):
         results_path = self.paths["results_path"]
-        combine_records(Path(self.paths["save_path"]), remove_left_overs=False, save_dir=results_path)
+        combine_records(
+            Path(self.paths["save_path"]),
+            remove_left_overs=False,
+            save_dir=results_path,
+        )
