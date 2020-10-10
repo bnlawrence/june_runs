@@ -79,7 +79,7 @@ def parse_paths(paths_configuration):
         ret["save_path"] = newpath
     ret["save_path"].mkdir(exist_ok=True, parents=True)
 
-    ret["data_path"] = ret["save_path"] / "data"
+    ret["data_path"] = ret["save_path"] / "data_used"
     ret["data_path"].mkdir(exist_ok=True, parents=True)
 
     ret["results_path"] = ret["save_path"] / "results"

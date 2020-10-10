@@ -1,0 +1,51 @@
+system_configuration:
+  system_to_use: jasmin
+  memory_per_job: 100 # GB
+  cpus_per_job: 80
+  extra_header_lines: ['#SBATCH --mem-per-cpu=8000']
+  extra_module_lines: []
+  extra_command_lines: ["echo \"job done\""]
+
+purpose_of_the_run: "Test variation of results for different infectivity profiles."
+random_seed: "random"
+
+paths_configuration: # use @ as placeholder
+  run_name: "bruno_nature" # will be used to store results
+  june_runs_path: "auto"
+  save_path: "/gws/nopw/j04/covid_june/arnau/bruno/nature" # if auto, it will be june_runs_path/run_name (it won't override anything)
+  world_path: "/gws/nopw/j04/covid_june/june_worlds/england.hdf5" 
+  # if these are defults, they will be picked from the june_runs_path/configuration/default_baseline_configs
+  baseline_interaction_path: "default"
+  basline_policy_path: "@june_runs_path/configuration/default_baseline_configs/policy.yaml"
+  simulation_config_path: "default"
+  virtual_env_path: "@june_runs_path/june_venv"
+
+parameter_configuration:
+  parameters_to_run: "all"
+  n_days: 90
+  sampling_type: grid # available: [latin_hypercube, grid, regular_grid]
+  parameters:
+    n_samples: 1
+    interaction:
+      betas:
+        pub       : 1
+        grocery   : 1
+        cinema    : 1
+        city_transport : 1
+        inter_city_transport : 1
+        hospital  : 1 
+        care_home : 1
+        company   : 1
+        school    : 1
+        household : 1
+        university: 1
+      alpha_physical : 2
+      susceptibilities:
+        "0-13" : 0.5
+        "13-150" : 1.0
+  
+    infection:
+      asymptomatic_ratio: 0.3
+      seed_strength : 1
+      infectivity_profile: nature
+  
