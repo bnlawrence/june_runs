@@ -1,7 +1,7 @@
 system_configuration:
   system_to_use: jasmin 
   memory_per_job: 10 # GB
-  cpus_per_job: 60
+  cpus_per_job: 200
 
 purpose_of_the_run: "baseline run to check effectivity of circuit breakers"
 random_seed: "random"
