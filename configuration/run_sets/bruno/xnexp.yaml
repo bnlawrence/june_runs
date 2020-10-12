@@ -1,7 +1,7 @@
 system_configuration:
   system_to_use: cosma5
   memory_per_job: 100 # GB
-  cpus_per_job: 80
+  cpus_per_job: 6
   extra_header_lines: []
   extra_module_lines: []
   extra_command_lines: ["echo \"job done\""]
@@ -12,8 +12,9 @@ random_seed: 45638635
 paths_configuration: # use @ as placeholder
   run_name: "bruno_xnexp" # will be used to store results
   june_runs_path: "auto"
-  save_path: "/cosma5/data/durham/covid19/results_bruno/xnexp" # if auto, it will be june_runs_path/run_name (it won't override anything)
+  save_path: "/cosma5/data/durham/covid19/arnau/bruno/xnexp" # if auto, it will be june_runs_path/run_name (it won't override anything)
   world_path: "/cosma5/data/durham/covid19/june_worlds/england_old.hdf5" 
+  world_path: "/cosma7/data/dp004/dc-quer1/JUNE/scripts/tests.hdf5" 
   # if these are defults, they will be picked from the june_runs_path/configuration/default_baseline_configs
   baseline_interaction_path: "default"
   basline_policy_path: "@june_runs_path/configuration/default_baseline_configs/policy.yaml"
@@ -22,7 +23,7 @@ paths_configuration: # use @ as placeholder
 
 parameter_configuration:
   parameters_to_run: "all"
-  n_days: 90
+  n_days: 20
   sampling_type: grid # available: [latin_hypercube, grid, regular_grid]
   parameters:
     n_samples: 1

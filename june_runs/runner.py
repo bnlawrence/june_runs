@@ -197,10 +197,10 @@ class Runner:
         time1 = time()
         simulator.run()
         time2 = time()
-        print(f"Finished! Simulation took {time2-time1} seconds!")
         if mpi_rank == 0:
+            print(f"Finished! Simulation took {time2-time1} seconds!")
             self.save_results()
-        print(f"Results saved!")
+            print(f"Results saved!")
 
     def save_results(self):
         results_path = self.paths["results_path"]
