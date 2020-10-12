@@ -1,7 +1,6 @@
 import yaml
 from pathlib import Path
-
-supported_systems = ["cosma5", "cosma6", "cosma7", "jasmin", "archer", "hartree"]
+import getpass, os
 
 from june_runs.paths import configuration_path
 
@@ -24,13 +23,12 @@ class ScriptMaker:
         extra_module_lines = None,
         extra_command_lines =None,
     ):
-        if system not in supported_systems:
-            raise ValueError(f"System {system} not supported yet.")
+        self.system_configuration = self._load_system_configuration(system)
         self.run_directory = Path(run_directory)
         self.stdout_directory = self.run_directory / "stdout"
         self.stdout_directory.mkdir(exist_ok=True, parents=True)
         self.job_name = job_name
-        self.system_configuration = self._load_system_configuration(system)
+       
         self.nodes_required = self.calculate_number_of_nodes(
             memory_per_job=memory_per_job,
             cpus_per_job=cpus_per_job,
@@ -44,6 +42,8 @@ class ScriptMaker:
 
     def _load_system_configuration(self, system):
         system_configuration_path = configuration_path / f"system/{system}.yaml"
+        if not os.path.exists(system_configuration_path):
+            raise ValueError(f"System {system} not supported yet.")
         with open(system_configuration_path, "r") as f:
             system_configuration = yaml.load(f, Loader=yaml.FullLoader)
         return system_configuration
@@ -78,7 +78,10 @@ class ScriptMaker:
 
     def make_script_header(self, script_number):
         queue = self.system_configuration["queue"]
-        account = self.system_configuration["account"]
+        if 'account' in self.system_configuration: 
+            account = self.system_configuration["account"]
+        else:
+            account = None
         max_time = self.system_configuration["max_time"]
         scheduler = self.system_configuration["scheduler"]
         stdout_path = self.stdout_directory / f"run_{script_number:03d}"
@@ -89,11 +92,12 @@ class ScriptMaker:
                 f"#SBATCH --ntasks {self.cpus_per_job}",
                 f"#SBATCH -J {self.job_name}_{script_number:03d}",
                 f"#SBATCH -p {queue}",
-                f"#SBATCH -A {account}",
                 f"#SBATCH -o {stdout_path}.out",
                 f"#SBATCH -e {stdout_path}.err",
                 f"#SBATCH -t {max_time}",
             ]
+            if account:
+                header.append(f"#SBATCH -A {account}")
         elif scheduler == "pbs":
             header = [
                 "#!/bin/bash -l",
@@ -111,7 +115,7 @@ class ScriptMaker:
                 "#!/bin/bash -l",
                 "",
                 f'#BSUB -R "span[ptile={self.cpus_per_job}]"',
-                # f'#BSUB -R "rusage[mem={self.memory_per_job}000]"', 
+                # f'#BSUB -R "rusage[mem={self.memory_per_job}000]"',
                 f"#BSUB -n {self.cpus_per_job}",
                 f"#BSUB -J {self.job_name}_{script_number:03d}",
                 f"#BSUB -q {queue}",
@@ -164,7 +168,7 @@ class ScriptMaker:
             with open(save_dir / "run.py", "w") as f:
                 for line in running_script:
                     f.write(line + "\n")
-        # make scrit to submit all jobs
+        # make script to submit all jobs
         submit_all_script = self.make_submit_all_script(script_paths)
         with open(self.run_directory / "submit_all.sh", "w") as f:
             for line in submit_all_script:
@@ -183,6 +187,7 @@ class ScriptMaker:
                 submission_command = "bsub <"
             else:
                 submission_command = "bsub"
+            
         else:
             raise ValueError(f"Scheduler {scheduler} not yet supported.")
         for path in script_paths:
