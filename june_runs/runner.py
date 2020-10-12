@@ -87,9 +87,9 @@ class Runner:
                         int(super_area_name_to_id[super_area])
                     ] = domain
 
-            with open("super_area_ids_to_domain.json", "w") as f:
+            with open(save_path / "super_area_ids_to_domain.json", "w") as f:
                 json.dump(super_area_ids_to_domain_dict, f)
-            with open("super_area_names_to_domain.json", "w") as f:
+            with open(save_path / "super_area_names_to_domain.json", "w") as f:
                 json.dump(super_area_names_to_domain_dict, f)
         mpi_comm.Barrier() # wait until rank 0 writes domain partition
         if mpi_rank > 0:
