@@ -162,4 +162,4 @@ class Runner:
 
     def save_results(self):
         results_path = self.paths["results_path"]
-        combine_records(Path(self.paths["save_path"]), remove_left_overs=False, save_dir=results_path)
+        combine_records(Path(self.paths["save_path"]), remove_left_overs=False, save_dir=Path(results_path))
