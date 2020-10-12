@@ -53,6 +53,7 @@ class InteractionSetter:
                     interaction.beta[key] = value
         # susceptibility
         if self.susceptibilities_by_age is not None:
+            interaction.susceptibilities_by_age = self.susceptibilities_by_age
             interaction.set_population_susceptibilities(
                 population=self.population,
                 susceptibilities_by_age=self.susceptibilities_by_age,
