@@ -13,7 +13,7 @@ def str_to_class(classname):
 class PolicySetter:
     def __init__(self, policies_baseline: dict, policies_to_modify: dict):
         self.policies_baseline = policies_baseline
-        self.policies_to_modify = policies_to_modify
+        self.policies_to_modify = policies_to_modify or {}
 
     @classmethod
     def from_parameters(cls, policies_to_modify: dict, baseline_policy_path: str):

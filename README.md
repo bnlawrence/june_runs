@@ -75,9 +75,11 @@ paths_configuration: # use @ as placeholder
 ```
 
 
-Finally, we need to tell the runner which parameter should it vary across all runs. There is a variety of sampling techniques available: grid, regular_grid, and latin hypercube. In this case, we run a lth, and all the parameters that are given as a list of two numbers are interpreted as the bounds of the hypercube dimension. If a parameter is given as a scalar, then that parameter is fixed across all runs.
+Finally, we need to tell the runner which parameter should it vary across all runs. There is a variety of sampling techniques available: ``grid``, ``regular_grid``, and ``latin_hypercube``. In this case, we run a lth, and all the parameters that are given as a list of two numbers are interpreted as the bounds of the hypercube dimension. If a parameter is given as a scalar, then that parameter is fixed across all runs.
 
 There is a special feature in ``policies`` which allow the user to define a soft-hard lockdown transition, specifying the date and the relative strength of the lockdowns.
+
+The number of days to run the simulation for is specified in ``n_days``.
 
 ```yaml
 parameter_configuration:
@@ -85,6 +87,7 @@ parameter_configuration:
   sampling_type: latin_hypercube # available: [latin_hypercube, grid, regular_grid]
   parameters:
     n_samples: 10
+    n_days: 10
     interaction:
       betas:
         pub       : [0.01, 0.25]
@@ -132,7 +135,7 @@ python setup_run.py -c configuration/run_sets/quick_examples/jasmin.yaml
 In this case, a folder named ``example_run`` will be created. This directory contains 3 sub-directories:
 - Data: The data that was used to run the code. It's just there for reproducibility in the case we want to reproduce a run.
 - Runs: Directory containing sub-directories for every run.
-- Summaries: Output directory where the result summaries of the simulation will be stored.
+- Results: Output directory where the result summaries and records of the simulation will be stored.
 
 The most important directory is the runs folder, which contains the following:
 - ``run_000``

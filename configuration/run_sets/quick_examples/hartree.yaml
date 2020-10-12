@@ -1,9 +1,9 @@
 system_configuration:
-  system_to_use: jasmin
+  system_to_use: hartree
   memory_per_job: 10 # GB
-  cpus_per_job: 2
+  cpus_per_job: 16
   extra_header_lines: []
-  extra_module_lines: ["source activate @june_runs_path/june_venv"]
+  extra_module_lines: ["source /lustre/scafellpike/local/HT03340/hxt01/hxt28-hxt01/june_runs/june_venv/bin/activate"]
   extra_command_lines: ["echo \"job done\""]
 
 purpose_of_the_run: "this is an example run."
@@ -18,11 +18,11 @@ paths_configuration: # use @ as placeholder
   baseline_interaction_path: "default"
   basline_policy_path: "@june_runs_path/configuration/default_baseline_configs/policy.yaml"
   simulation_config_path: "default"
-  virtual_env_path: "@june_runs_path/june_venv"
+  virtual_env_path: "/lustre/scafellpike/local/HT03340/hxt01/hxt28-hxt01/june_runs/june_venv"
 
 parameter_configuration:
   parameters_to_run: "all"
-  n_days: 10
+  n_days: 90
   sampling_type: latin_hypercube # available: [latin_hypercube, grid, regular_grid]
   parameters:
     n_samples: 10

@@ -1,0 +1,8 @@
+name: hartree
+queue: scafellpikeSKL
+account: HT03340
+cores_per_node: 32
+memory_per_node: 192
+max_time: "48:00"
+scheduler: "lsf"
+modules_to_load: ["use.scafellpike", "utilities-gcc", "openmpi-gcc/2.1.1"]
