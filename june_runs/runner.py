@@ -94,10 +94,10 @@ class Runner:
         mpi_comm.Barrier() # wait until rank 0 writes domain partition
         if mpi_rank > 0:
             with open(save_path / "super_area_ids_to_domain.json", "r") as f:
-                super_areas_to_domain_dict = json.load(f, object_hook=keys_to_int)
+                super_area_ids_to_domain_dict= json.load(f, object_hook=keys_to_int)
         domain = Domain.from_hdf5(
             domain_id=mpi_rank,
-            super_areas_to_domain_dict=super_areas_to_domain_dict,
+            super_areas_to_domain_dict=super_area_ids_to_domain_dict,
             hdf5_file_path=self.paths["world_path"],
         )
         return domain
