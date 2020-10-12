@@ -40,7 +40,6 @@ def parse_paths(paths_configuration):
             june_runs_path
             / "configuration/default_baseline_configs/simulation_config.yaml"
         ).as_posix()
-    print ('Hi bryan, ',paths_configuration["simulation_config_path"] )
     for key, value in paths_configuration.items():
         if "path" in key:
             if "@" in str(value):
