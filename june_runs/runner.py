@@ -5,8 +5,9 @@ import random
 import numpy as np
 import datetime
 from pathlib import Path
+from time import time
 
-from june.domain import Domain, generate_domain_split
+from june.domain import Domain, DomainSplitter
 from june.mpi_setup import mpi_rank, mpi_size, mpi_comm
 from june.groups.leisure import generate_leisure_for_config
 from june.groups.travel import Travel
@@ -72,20 +73,27 @@ class Runner:
             super_area_name_to_id = {
                 key: value for key, value in zip(super_area_names, super_area_ids)
             }
-
             # make dictionary super_area_id -> domain
-            super_area_names_to_domain_dict = generate_domain_split(
-                super_areas=super_area_names, number_of_domains=mpi_size
+            domain_splitter = DomainSplitter(
+                number_of_domains=mpi_size, super_areas=super_area_names
             )
-            super_areas_to_domain_dict = {}
-            for key, value in super_area_names_to_domain_dict.items():
-                super_areas_to_domain_dict[super_area_name_to_id[key]] = value
+            super_areas_per_domain = domain_splitter.generate_domain_split(niter=12)
+            super_area_names_to_domain_dict = {}
+            super_area_ids_to_domain_dict = {}
+            for domain, super_areas in super_areas_per_domain.items():
+                for super_area in super_areas:
+                    super_area_names_to_domain_dict[super_area] = domain
+                    super_area_ids_to_domain_dict[
+                        int(super_area_name_to_id[super_area])
+                    ] = domain
 
-            with open(save_path / "super_areas_to_domain.json", "w") as f:
-                json.dump(super_areas_to_domain_dict, f)
+            with open("super_area_ids_to_domain.json", "w") as f:
+                json.dump(super_area_ids_to_domain_dict, f)
+            with open("super_area_names_to_domain.json", "w") as f:
+                json.dump(super_area_names_to_domain_dict, f)
         mpi_comm.Barrier() # wait until rank 0 writes domain partition
         if mpi_rank > 0:
-            with open(save_path / "super_areas_to_domain.json", "r") as f:
+            with open(save_path / "super_area_ids_to_domain.json", "r") as f:
                 super_areas_to_domain_dict = json.load(f, object_hook=keys_to_int)
         domain = Domain.from_hdf5(
             domain_id=mpi_rank,
@@ -186,9 +194,13 @@ class Runner:
 
     def run(self):
         simulator = self.generate_simulator()
+        time1 = time()
         simulator.run()
+        time2 = time()
+        print(f"Finished! Simulation took {time2-time1} seconds!")
         if mpi_rank == 0:
             self.save_results()
+        print(f"Results saved!")
 
     def save_results(self):
         results_path = self.paths["results_path"]
