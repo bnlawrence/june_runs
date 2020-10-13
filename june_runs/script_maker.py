@@ -168,11 +168,24 @@ class ScriptMaker:
             with open(save_dir / "run.py", "w") as f:
                 for line in running_script:
                     f.write(line + "\n")
+            if i == 0:
+                try:
+                    print_path = script_path.relative_to(Path.cwd())
+                except:
+                    print_path = script_path
+                print(f"running scripts written to eg.\n    {print_path}")     
         # make script to submit all jobs
         submit_all_script = self.make_submit_all_script(script_paths)
-        with open(self.run_directory / "submit_all.sh", "w") as f:
+        all_scripts_path = self.run_directory / "submit_all.sh"
+        with open(all_scripts_path, "w") as f:
             for line in submit_all_script:
                 f.write(line + "\n")
+
+        try:
+            print_path = all_scripts_path.relative_to(Path.cwd())
+        except:
+            print_path = all_scripts_path            
+        print(f"submit all scripts with:\n    \033[035mbash {print_path}\033[0m")
 
     def make_submit_all_script(self, script_paths):
         script = ["#!/bin/bash -l \n"]

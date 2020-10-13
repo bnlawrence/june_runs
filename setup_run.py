@@ -4,10 +4,11 @@ import json
 import random
 import os
 import sys
+import subprocess
 from copy import deepcopy
 from pathlib import Path
 
-from june_runs.utils import parse_paths
+from june_runs.utils import parse_paths, config_checks, git_checks, copy_input_data
 from june_runs import ParameterGenerator, ScriptMaker
 
 
@@ -28,6 +29,12 @@ class RunSetup:
             system_configuration,
             self.paths,
             number_of_jobs=len(self.parameter_generator),
+        )
+        git_checks()
+        config_checks(
+            paths_configuration=self.paths, 
+            parameter_configuration=self.parameters, 
+            system_configuration=system_configuration
         )
 
     @staticmethod
@@ -141,7 +148,13 @@ if __name__ == "__main__":
     parser.add_argument(
         "-c", "--config", help="Path to run config.", required=True,
     )
-    parser.add_argument("-s", "--save", help="Store parameters file.", default=None)
+    parser.add_argument(
+        "-s", "--save", help="Store parameters file, then exit.", default=None
+    )
+    parser.add_argument(
+        "-d", "--copy-data", help="Copy input data to results folder", required=False,
+        default=False, action="store_true"
+    )
     args = parser.parse_args()
 
     with open(args.config) as f:
@@ -153,6 +166,12 @@ if __name__ == "__main__":
         parameter_generator.save_parameters_to_file(args.save)
         sys.exit()
 
+
     run_setup = RunSetup(run_configuration=config,)
+    if args.copy_data:
+        copy_input_data(run_setup.paths["data_path"])
     run_setup.save_run_parameters()
     run_setup.script_maker.write_scripts()
+
+    
+

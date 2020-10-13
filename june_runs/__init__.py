@@ -7,7 +7,7 @@ from .utils import (
     config_checks,
     git_checks,
     memory_status,
-    copy_data,
+    copy_input_data,
 )
 from .extract_data import *
 

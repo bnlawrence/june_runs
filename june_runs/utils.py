@@ -2,13 +2,14 @@ import sys
 import psutil
 import shutil
 import os
+from contextlib import contextmanager
+import contextlib
+import warnings
 import subprocess
-
 from pathlib import Path
 
 import june
 from june import paths
-
 
 def parse_paths(paths_configuration):
     """
@@ -26,7 +27,9 @@ def parse_paths(paths_configuration):
     else:
         june_runs_path = Path(paths_configuration["june_runs_path"])
     if paths_configuration.get("save_path", "auto") == "auto":
-        paths_configuration["save_path"] = (june_runs_path / paths_configuration["run_name"]).as_posix()
+        paths_configuration["save_path"] = (
+            june_runs_path / paths_configuration["run_name"]
+        ).as_posix()
     if paths_configuration.get("baseline_policy_path", "default") == "default":
         paths_configuration["baseline_policy_path"] = (
             june_runs_path / "configuration/default_baseline_configs/policy.yaml"
@@ -104,65 +107,63 @@ def memory_status(when="now"):
     return f"memory {when}: \n    {tot}, {used}, {perc}, {avail}"
 
 
-def config_checks(config):
+def config_checks(
+    paths_configuration=None, 
+    parameter_configuration=None, 
+    system_configuration=None
+):
     check = "\033[33mCHECK:\033[0m\n   "
-
-    paths = parse_paths(
-        config["paths_configuration"],
-        region=config["region"],
-        iteration=config["iteration"],
-    )
-    wp = paths["world_path"].stem
-    if config["region"] not in paths["world_path"].stem:
-        print(check, "Have you set the world_path or region in config correctly?")
-    if paths["world_path"].exists() is False:
-        print(check, "world_path does not exist.")
-    if config["parameter_configuration"].get("parameters_to_run") not in [None, "all"]:
-        print(check, 'are you sure you don\'t want "all" parameters_to_run?')
-    return None
-
+    if paths_configuration is not None:
+        if paths_configuration["world_path"].exists() is False:
+            print(check,"world_path does not exist.")
+    if parameter_configuration is not None:
+        if parameter_configuration.get("parameters_to_run") not in [None, "all"]:
+            print(check+"are you sure you don\'t want \"all\" parameters_to_run?")
+    if system_configuration is not None:
+        pass
+    print("\n")
 
 def git_checks():
     """
     Print the JUNE git version.
     Print the JUNE git SHA
     """
+
     check = "\033[33mCHECK:\033[0m\n   "
     june_git = Path(june.__path__[0]).parent / ".git"
     branch_cmd = f"git --git-dir {june_git} rev-parse --abbrev-ref HEAD".split()
     try:
         branch = (
-            subprocess.run(branch_cmd, stdout=subprocess.PIPE)
-            .stdout.decode("utf-8")
-            .strip()
+            subprocess.run(
+                branch_cmd, stdout=subprocess.PIPE
+            ).stdout.decode("utf-8").strip()
         )
+        _branch = (
+            f"\033[33m{branch.upper()}\033[0m" if branch != "master" else f"{branch.upper()}"
+        )
+        branch_info = f"You\'re running JUNE on branch {_branch}"
     except:
-        return None
-
+        branch_info = f"Can't read git branch"
     local_SHA_cmd = f'git --git-dir {june_git} log -n 1 --format="%h"'.split()
     try:
         local_SHA = (
-            subprocess.run(local_SHA_cmd, stdout=subprocess.PIPE)
-            .stdout.decode("utf-8")
-            .strip()
+            subprocess.run(
+                local_SHA_cmd, stdout=subprocess.PIPE
+            ).stdout.decode("utf-8").strip()
         )
-        print(f"You're running with commitID {local_SHA}")
+        SHA_info = f"You\'re at commitID {local_SHA}"
     except:
-        print("Can't read local git SHA")
+        SHA_info = "Can\'t read local git SHA"
         local_SHA = "unavailable"
-    print(f"You're running on branch {branch.upper()}")
+    
+    print(branch_info)
+    print(SHA_info)
 
-
-def copy_data(new_data_path, june_data_path=None):
-    input_data_path = new_data_path / "input"
-    covid_real_data_path = new_data_path / "covid_real_data"
-
+def copy_input_data(new_data_path, june_data_path=None):
     if june_data_path is None:
         june_data_path = june.paths.data_path
 
-    # if input_data_path.exists() is False:
-    #    shutil.copytree(june_data_path, new_data_path, dirs_exist_ok=True)
-    # else:
-    #    print("Skip data copy")
+    shutil.copytree(june_data_path / "input", new_data_path / "input")
+    shutil.copytree(june_data_path / "covid_real_data", new_data_path / "covid_real_data")
 
     return None
