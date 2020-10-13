@@ -173,5 +173,3 @@ if __name__ == "__main__":
     run_setup.save_run_parameters()
     run_setup.script_maker.write_scripts()
 
-    
-

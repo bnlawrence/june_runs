@@ -2,9 +2,6 @@ import sys
 import psutil
 import shutil
 import os
-from contextlib import contextmanager
-import contextlib
-import warnings
 import subprocess
 from pathlib import Path
 
@@ -128,8 +125,7 @@ def git_checks():
     Print the JUNE git version.
     Print the JUNE git SHA
     """
-
-    check = "\033[33mCHECK:\033[0m\n   "
+    # TODO: suppress irritating OpenMPI call to fork warning on subprocess call...?
     june_git = Path(june.__path__[0]).parent / ".git"
     branch_cmd = f"git --git-dir {june_git} rev-parse --abbrev-ref HEAD".split()
     try:
