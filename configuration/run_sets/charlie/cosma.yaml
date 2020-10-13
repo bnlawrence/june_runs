@@ -16,7 +16,7 @@ paths_configuration: # use @ as placeholder
   world_path: "@june_runs_path/june_worlds/tests.hdf5" 
   # if these are defults, they will be picked from the june_runs_path/configuration/default_baseline_configs
   baseline_interaction_path: "default"
-  basline_policy_path: "@june_runs_path/configuration/run_sets/charlie/policies.yaml"
+  baseline_policy_path: "@june_runs_path/configuration/run_sets/charlie/policies.yaml"
   simulation_config_path: "default"
 
 parameter_configuration:
@@ -47,6 +47,8 @@ parameter_configuration:
       asymptomatic_ratio: [0.05, 0.4]
       seed_strength : [0.5,1.3]
       infectivity_profile: nature 
+      seeding_start: "2020-02-28"
+      seeding_end: "2020-03-02"
   
     policies:
       social_distancing:
