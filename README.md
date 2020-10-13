@@ -75,7 +75,7 @@ paths_configuration: # use @ as placeholder
 ```
 
 
-Finally, we need to tell the runner which parameter should it vary across all runs. There is a variety of sampling techniques available: ``grid``, ``regular_grid``, and ``latin_hypercube``. In this case, we run a lth, and all the parameters that are given as a list of two numbers are interpreted as the bounds of the hypercube dimension. If a parameter is given as a scalar, then that parameter is fixed across all runs. It is also possible to use placeholders to set parameter values relative to the other parameters ( which can be varying). Use the following syntax ``@policyname__policynumber__parameter__`` as in the example.
+Finally, we need to tell the runner which parameter should it vary across all runs. There is a variety of sampling techniques available: ``grid``, ``regular_grid``, and ``latin_hypercube``. In this case, we run a lth, and all the parameters that are given as a list of two numbers are interpreted as the bounds of the hypercube dimension. If a parameter is given as a scalar, then that parameter is fixed across all runs. It is also possible to use placeholders to set parameter values relative to the other parameters ( which can be varying). Use the following syntax ``@policyname__policynumber__parameter`` as in the example.
 
 The number of days to run the simulation for is specified in ``n_days``.
 
