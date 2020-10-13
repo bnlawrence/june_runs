@@ -57,7 +57,7 @@ parameter_configuration:
         2: 
             start_time: 2020-03-24
             end_time: 2020-05-11
-            overall_beta_factor: "1 - 2 * ( 1 - @social_distancing__1__overall_beta_factor )"
+            overall_beta_factor: "1 - 1.67 * ( 1 - @social_distancing__1__overall_beta_factor )"
         3: 
             start_time: 2020-05-11
             end_time: 2020-07-04
