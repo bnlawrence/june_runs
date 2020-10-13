@@ -16,7 +16,7 @@ paths_configuration: # use @ as placeholder
   world_path: "@june_runs_path/june_worlds/tests.hdf5" 
   # if these are defults, they will be picked from the june_runs_path/configuration/default_baseline_configs
   baseline_interaction_path: "default"
-  basline_policy_path: "@june_runs_path/configuration/default_baseline_configs/policy.yaml"
+  basline_policy_path: "@june_runs_path/configuration/run_sets/charlie/policies.yaml"
   simulation_config_path: "default"
 
 parameter_configuration:
@@ -67,15 +67,10 @@ parameter_configuration:
           1: 
               start_time: 2020-03-16
               end_time: 2020-03-24
-              compliance: [0.05, 0.4]
+              compliance: [0.05, 0.45]
               household_compliance: "0.75 * @quarantine__1__compliance"
           2: 
               start_time: 2020-03-24
               end_time: 2020-05-11
               compliance: "2 * @quarantine__1__compliance"
               household_compliance: "2 * @quarantine__1__household_compliance"
-          3: 
-              start_time: 2020-05-11
-              end_time: 2020-07-04
-              compliance: "1.5 * @quarantine__1__compliance"
-              household_compliance: "1.5 * @quarantine__1__household_compliance"
