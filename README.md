@@ -75,9 +75,7 @@ paths_configuration: # use @ as placeholder
 ```
 
 
-Finally, we need to tell the runner which parameter should it vary across all runs. There is a variety of sampling techniques available: ``grid``, ``regular_grid``, and ``latin_hypercube``. In this case, we run a lth, and all the parameters that are given as a list of two numbers are interpreted as the bounds of the hypercube dimension. If a parameter is given as a scalar, then that parameter is fixed across all runs.
-
-There is a special feature in ``policies`` which allow the user to define a soft-hard lockdown transition, specifying the date and the relative strength of the lockdowns.
+Finally, we need to tell the runner which parameter should it vary across all runs. There is a variety of sampling techniques available: ``grid``, ``regular_grid``, and ``latin_hypercube``. In this case, we run a lth, and all the parameters that are given as a list of two numbers are interpreted as the bounds of the hypercube dimension. If a parameter is given as a scalar, then that parameter is fixed across all runs. It is also possible to use placeholders to set parameter values relative to the other parameters ( which can be varying). Use the following syntax ``@policyname__policynumber__parameter`` as in the example.
 
 The number of days to run the simulation for is specified in ``n_days``.
 
@@ -112,15 +110,35 @@ parameter_configuration:
       infectivity_profile: xnexp
   
     policies:
-      lockdown:
-        soft_lockdown_date: 2020-03-16
-        hard_lockdown_date: 2020-03-24
-        lockdown_ratio: 0.5 # relative strength of lockdowns
-        hard_lockdown_policy_parameters:
-          social_distancing:
-            overall_beta_factor: [0.3, 0.9]
-          quarantine: 
-            overall_compliance: [0.2, 0.8]
+      social_distancing:
+        1: 
+            start_time: 2020-03-16
+            end_time: 2020-03-24 
+            overall_beta_factor: [0.65, 0.95]
+        2: 
+            start_time: 2020-03-24
+            end_time: 2020-05-11
+            overall_beta_factor: "1 - 2 * ( 1 - @social_distancing__1__overall_beta_factor )"
+        3: 
+            start_time: 2020-05-11
+            end_time: 2020-07-04
+            overall_beta_factor: "1 - 1.5 * ( 1 - @social_distancing__1__overall_beta_factor )"
+      quarantine: 
+          1: 
+              start_time: 2020-03-16
+              end_time: 2020-03-24
+              compliance: [0.05, 0.4]
+              household_compliance: "0.75 * @quarantine__1__compliance"
+          2: 
+              start_time: 2020-03-24
+              end_time: 2020-05-11
+              compliance: "2 * @quarantine__1__compliance"
+              household_compliance: "2 * @quarantine__1__household_compliance"
+          3: 
+              start_time: 2020-05-11
+              end_time: 2020-07-04
+              compliance: "1.5 * @quarantine__1__compliance"
+              household_compliance: "1.5 * @quarantine__1__household_compliance"
 
 ```
 

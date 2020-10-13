@@ -3,6 +3,7 @@ import csv
 import os
 import sys
 import yaml
+import numexpr
 import json
 from copy import deepcopy
 from datetime import datetime
@@ -56,6 +57,22 @@ def set_value_in_path(d, path, value):
     d[path[-1]] = value
 
 
+def get_value_in_path(d, path):
+    i = 0
+    while i < len(path) - 1:
+        d = d[path[i]]
+        i += 1
+    return d[path[-1]]
+
+
+def get_placeholders(string):
+    placeholders = []
+    for index, word in enumerate(string.split(" ")):
+        if word.startswith("@"):
+            placeholders.append((index, word[1:]))
+    return placeholders
+
+
 class ParameterGenerator:
     def __init__(
         self, parameter_list: List[dict], parameters_to_run: List[int] = "all",
@@ -69,21 +86,51 @@ class ParameterGenerator:
         then we build a config for soft and hard lockdown using the parameters specified.
         See the runner tests for examples.
         """
-        for parameters in parameter_list:
+        ret = deepcopy(parameter_list)
+        for i, parameters in enumerate(parameter_list):
+            parameter_search_dict = {}
             if "policies" in parameters:
-                for policy in parameters["policies"]:
-                    if "lockdown" in policy:
-                        ret = deepcopy(parameters["policies"])
-                        lockdown_config = ret.pop("lockdown")
-                        lockdown_policies = build_policy_config_for_lockdown(
-                            **lockdown_config
-                        )
-                        parameters["policies"] = {**ret, **lockdown_policies}
-        return parameter_list
+                # parse any place holders
+                for policy, policy_numbers in parameters["policies"].items():
+                    for policy_number, policy_data in policy_numbers.items():
+                        for parameter, parameter_value in policy_data.items():
+                            if type(parameter_value) == list:
+                                parameter_value = np.array(parameter_value)
+                            parameter_search_dict[
+                                f"{policy}__{int(policy_number)}__{parameter}"
+                            ] = parameter_value
+                for key in parameter_search_dict:
+                    value = parameter_search_dict[key]
+                    if type(value) == str and "@" in value:
+                        placeholders = get_placeholders(parameter_search_dict[key])
+                        parsed = value.split(" ")
+                        for placeholder in placeholders:
+                            index, word = placeholder
+                            parsed[index] = str(parameter_search_dict[word])
+                        parsed_value = numexpr.evaluate(" ".join(parsed))
+                        parameter_search_dict[key] = float(parsed_value)
+
+                # parse back replaced data
+                ret[i]["policies"] = {}
+                for key, value in parameter_search_dict.items():
+                    path = key.split("__")
+                    set_value_in_path(d=ret[i]["policies"], path=path, value=value)
+
+                # build social distancing factors
+                for policy, policy_numbers in ret[i]["policies"].items():
+                    if policy == "social_distancing":
+                        for policy_number, policy_data in policy_numbers.items():
+                            ret[i]["policies"]["social_distancing"][
+                                policy_number
+                            ] = parse_social_distancing(policy_data)
+        return ret
 
     @classmethod
     def from_file(
-        cls, path_to_parameters: str, additional_parameters = None, parameters_to_run="all",
+        cls,
+        path_to_parameters: str,
+        additional_parameters=None,
+        parameters_to_run="all",
     ):
         additional_parameters = None or {}
         with open(path_to_parameters, "r") as f:
@@ -199,46 +246,15 @@ class ParameterGenerator:
             json.dump(self.parameter_list, f, indent=4, default=str)
 
 
-def build_policy_config_for_lockdown(
-    soft_lockdown_date: str,
-    hard_lockdown_date: str,
-    lockdown_ratio: int,
-    hard_lockdown_policy_parameters: dict,
-):
-    policy_dict = {}
-    for policy_type in hard_lockdown_policy_parameters:
-        policy_dict[policy_type] = {
-            "1": {"start_time": soft_lockdown_date},
-            "2": {"start_time": hard_lockdown_date},
-        }
-        # soft first
-        if policy_type == "social_distancing":
-            overall_beta_factor = hard_lockdown_policy_parameters["social_distancing"][
-                "overall_beta_factor"
-            ]
-            policy_dict[policy_type]["1"]["beta_factors"] = {}
-            policy_dict[policy_type]["2"]["beta_factors"] = {}
-            for group in all_groups:
-                if group == "household":
-                    policy_dict[policy_type]["1"]["beta_factors"][group] = 1.0
-                    policy_dict[policy_type]["2"]["beta_factors"][group] = 1.0
-                    continue
-                policy_dict[policy_type]["1"]["beta_factors"][
-                    group
-                ] = 1 + lockdown_ratio * (overall_beta_factor - 1)
-                policy_dict[policy_type]["2"]["beta_factors"][
-                    group
-                ] = overall_beta_factor
-        elif policy_type == "quarantine":
-            overall_compliance = hard_lockdown_policy_parameters["quarantine"][
-                "overall_compliance"
-            ]
-            policy_dict[policy_type]["1"]["compliance"] = (
-                lockdown_ratio * overall_compliance
-            )
-            policy_dict[policy_type]["1"]["household_compliance"] = (
-                lockdown_ratio * overall_compliance
-            )
-            policy_dict[policy_type]["2"]["compliance"] = overall_compliance
-            policy_dict[policy_type]["2"]["household_compliance"] = overall_compliance
-    return policy_dict
+def parse_social_distancing(policy_data):
+    if "overall_beta_factor" not in policy_data:
+        return policy_data
+    ret = deepcopy(policy_data)
+    overall_beta_factor = ret.pop("overall_beta_factor")
+    ret["beta_factors"] = {}
+    for group in all_groups:
+        if group == "household":
+            ret["beta_factors"][group] = 1.0
+            continue
+        ret["beta_factors"][group] = overall_beta_factor
+    return ret
