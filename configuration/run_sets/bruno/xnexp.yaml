@@ -13,7 +13,7 @@ paths_configuration: # use @ as placeholder
   run_name: "bruno_xnexp" # will be used to store results
   june_runs_path: "auto"
   save_path: "/cosma7/data/dp004/dc-quer1/june_results/bruno/xnexp" # if auto, it will be june_runs_path/run_name (it won't override anything)
-  world_path: "/cosma7/data/dp004/dc-quer1/june_worlds_stripped/england.hdf5" 
+  world_path: "/cosma7/data/dp004/dc-quer1/june_worlds_stripped/london.hdf5" 
   # if these are defults, they will be picked from the june_runs_path/configuration/default_baseline_configs
   baseline_interaction_path: "default"
   basline_policy_path: "@june_runs_path/configuration/default_baseline_configs/policy.yaml"
