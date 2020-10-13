@@ -75,7 +75,7 @@ class Runner:
             }
             # make dictionary super_area_id -> domain
             domain_splitter = DomainSplitter(
-                number_of_domains=mpi_size, super_areas=super_area_names
+                number_of_domains=mpi_size, world_path=self.paths["world_path"]
             )
             super_areas_per_domain = domain_splitter.generate_domain_split(niter=12)
             super_area_names_to_domain_dict = {}
