@@ -1,5 +1,7 @@
 import yaml
 from pathlib import Path
+
+supported_systems = ["cosma5", "cosma6", "cosma7", "cosma8", "jasmin", "archer", "hartree"]
 import getpass, os
 
 from june_runs.paths import configuration_path
@@ -70,6 +72,8 @@ class ScriptMaker:
         script_dir = self._get_script_dir(script_number)
         parameters_path = script_dir / "parameters.json"
         python_script = [
+            "import os",
+            "os.environ[\'OPENBLAS_NUM_THREADS\'] = \'1\'",
             "from june_runs import Runner\n",
             f"runner = Runner(\"{parameters_path}\")",
             "runner.run()",
