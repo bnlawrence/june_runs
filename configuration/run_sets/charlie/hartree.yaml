@@ -12,8 +12,8 @@ random_seed: "random"
 paths_configuration: # use @ as placeholder
   run_name: "charlie" # will be used to store results
   june_runs_path: "auto"
-  save_path: "@june_runs_path/runs/charlie" # if auto, it will be june_runs_path/run_name (it won't override anything)
-  results_path: "@june_runs_path/runs/charlie"
+  save_path: "@june_runs_path/runs/charlie_commute_fix" # if auto, it will be june_runs_path/run_name (it won't override anything)
+  results_path: "@june_runs_path/runs/charlie_commute_fix"
   world_path: "@june_runs_path/june_worlds/england_1310.hdf5"
   # if these are defults, they will be picked from the june_runs_path/configuration/default_baseline_configs
   baseline_interaction_path: "default"
@@ -28,17 +28,17 @@ parameter_configuration:
     n_samples: 250
     interaction:
       betas:
-        pub       : [0.03, 1]
-        grocery   : [0.03, 1]
-        cinema    : [0.03, 1]
-        university: [0.03, 1]
-        city_transport : [0.1, 2]
-        inter_city_transport : [0.1, 2]
-        hospital  : [0.1, 2]
-        care_home : [0.1, 2]
-        company   : [0.1, 2]
-        school    : [0.1, 2]
-        household : [0.1, 2]
+        pub       : [0.03, 0.75]
+        grocery   : [0.03, 0.75]
+        cinema    : [0.03, 0.75]
+        university: [0.03, 0.75]
+        city_transport : [0.1, 1.5]
+        inter_city_transport : [0.1, 1.5]
+        hospital  : [0.1, 1.5]
+        care_home : [0.1, 1.5]
+        company   : [0.1, 1.5]
+        school    : [0.1, 1.5]
+        household : [0.1, 1.5]
       alpha_physical : [1.8,3.0]
       susceptibilities:
         "0-13" : 0.5
