@@ -36,6 +36,10 @@ jobs:
     - name: get JUNE data
       run:
         get_june_data.sh
+
+    - name: Install june_runs
+      run:
+        pip install -e .
     - name: Test with pytest
       run: |
         cd test_runner
