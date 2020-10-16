@@ -68,9 +68,8 @@ class ScriptMaker:
         command = self.make_python_command(script_number, output_dir)
         return header + ["\n"] +  modules_to_load + ["\n"] + command
 
-    def make_running_script(self, script_number):
-        script_dir = self._get_script_dir(script_number)
-        parameters_path = script_dir / "parameters.json"
+    def make_running_script(self, output_dir):
+        parameters_path = output_dir / "parameters.json"
         python_script = [
             "import os",
             "os.environ[\'OPENBLAS_NUM_THREADS\'] = \'1\'",
@@ -169,7 +168,7 @@ class ScriptMaker:
                 else:
                     output_dir = save_dir / f"{directory}/run_{i:03d}"
                 submission_script = self.make_submission_script(i, output_dir)
-                running_script = self.make_running_script(i)
+                running_script = self.make_running_script(output_dir)
                 script_path = output_dir / "submit.sh"
                 assert output_dir.is_dir()
                 script_paths.append(script_path)
