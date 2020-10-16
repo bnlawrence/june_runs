@@ -29,6 +29,7 @@ jobs:
         pip install flake8 pytest
         pip install -r requirements.txt
     - name: get JUNE data
+      run:
         get_june_data.sh
     - name: Test with pytest
       run: |
