@@ -22,7 +22,7 @@ paths_configuration: # use @ as placeholder
 
 parameter_configuration:
   parameters_to_run: [187, 202]
-  n_days: 90
+  n_days: 400
   sampling_type: file # available: [file, latin_hypercube, grid, regular_grid]
   parameters:
     path: "@june_runs_path/configuration/run_sets/conan/conan_parameters.json"
