@@ -62,10 +62,10 @@ class ScriptMaker:
         memory_nodes = total_memory / memory_per_node
         return max(cpu_nodes, memory_nodes)
 
-    def make_submission_script(self, script_number):
+    def make_submission_script(self, script_number, output_dir):
         header = self.make_script_header(script_number)
         modules_to_load = self.make_script_modules()
-        command = self.make_python_command(script_number)
+        command = self.make_python_command(script_number, output_dir)
         return header + ["\n"] +  modules_to_load + ["\n"] + command
 
     def make_running_script(self, script_number):
@@ -147,9 +147,9 @@ class ScriptMaker:
             modules += self.extra_module_lines
         return modules
 
-    def make_python_command(self, script_number):
+    def make_python_command(self, script_number, output_dir):
         script_path = self._get_script_dir(script_number)
-        python_script_path = script_path / "run.py"
+        python_script_path = output_dir / "run.py"
         python_command = [
             f"mpirun -np {self.cpus_per_job} python3 -u {python_script_path}"
         ]
@@ -163,13 +163,13 @@ class ScriptMaker:
         script_paths = []
         for directory in directories_to_run:
             for i in range(self.number_of_jobs):
-                submission_script = self.make_submission_script(i)
-                running_script = self.make_running_script(i)
                 save_dir = self._get_script_dir(i)
                 if directory is None:
-                    output_dir = save_dir
+                    output_dir = save_dir / f"run_{i:03d}"
                 else:
-                    output_dir = save_dir / f"{directory}"
+                    output_dir = save_dir / f"{directory}/run_{i:03d}"
+                submission_script = self.make_submission_script(i, output_dir)
+                running_script = self.make_running_script(i)
                 script_path = output_dir / "submit.sh"
                 assert output_dir.is_dir()
                 script_paths.append(script_path)
