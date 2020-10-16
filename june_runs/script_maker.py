@@ -157,27 +157,34 @@ class ScriptMaker:
             python_command += self.extra_command_lines
         return python_command
 
-    def write_scripts(self):
+    def write_scripts(self, directories_to_run):
+        if not directories_to_run:
+            directories_to_run = [None]
         script_paths = []
-        for i in range(self.number_of_jobs):
-            submission_script = self.make_submission_script(i)
-            running_script = self.make_running_script(i)
-            save_dir = self._get_script_dir(i)
-            assert save_dir.is_dir()
-            script_path = save_dir / "submit.sh"
-            script_paths.append(script_path)
-            with open(script_path, "w") as f:
-                for line in submission_script:
-                    f.write(line + "\n")
-            with open(save_dir / "run.py", "w") as f:
-                for line in running_script:
-                    f.write(line + "\n")
-            if i == 0:
-                try:
-                    print_path = script_path.relative_to(Path.cwd())
-                except:
-                    print_path = script_path
-                print(f"running scripts written to eg.\n    {print_path}")     
+        for directory in directories_to_run:
+            for i in range(self.number_of_jobs):
+                submission_script = self.make_submission_script(i)
+                running_script = self.make_running_script(i)
+                save_dir = self._get_script_dir(i)
+                if directory is None:
+                    output_dir = save_dir
+                else:
+                    output_dir = save_dir / f"{directory}"
+                script_path = output_dir / "submit.sh"
+                assert output_dir.is_dir()
+                script_paths.append(script_path)
+                with open(script_path, "w") as f:
+                    for line in submission_script:
+                        f.write(line + "\n")
+                with open(output_dir / "run.py", "w") as f:
+                    for line in running_script:
+                        f.write(line + "\n")
+                if i == 0:
+                    try:
+                        print_path = script_path.relative_to(Path.cwd())
+                    except:
+                        print_path = script_path
+                    print(f"running scripts written to eg.\n    {print_path}")     
         # make script to submit all jobs
         submit_all_script = self.make_submit_all_script(script_paths)
         all_scripts_path = self.run_directory / "submit_all.sh"

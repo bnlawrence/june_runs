@@ -32,9 +32,9 @@ class RunSetup:
         )
         git_checks()
         config_checks(
-            paths_configuration=self.paths, 
-            parameter_configuration=self.parameters, 
-            system_configuration=system_configuration
+            paths_configuration=self.paths,
+            parameter_configuration=self.parameters,
+            system_configuration=system_configuration,
         )
 
     @staticmethod
@@ -113,7 +113,6 @@ class RunSetup:
     def save_run_parameters(self):
         for i, parameter in enumerate(self.parameter_generator):
             ret = {}
-            save_path = self.paths["runs_path"] / f"run_{i:03d}"
             random_seed = self.run_configuration.get("random_seed", "random")
             if random_seed == "random":
                 random_seed = random.randint(0, 1_000_000_000)
@@ -126,19 +125,48 @@ class RunSetup:
             ret["n_days"] = self.parameters["n_days"]
             ret["paths"] = {
                 "june_runs_path": self.paths["june_runs_path"],
-                "save_path": str(save_path),
                 "world_path": self.paths["world_path"],
-                "results_path": self.paths["results_path"] / f"run_{i:03d}",
-                "baseline_policy_path": self.paths["baseline_policy_path"],
                 "baseline_interaction_path": self.paths["baseline_interaction_path"],
                 "simulation_config_path": self.paths["simulation_config_path"],
             }
-            ret["paths"]["results_path"].mkdir(exist_ok=True, parents=True)
-            save_path.mkdir(exist_ok=True, parents=True)
-            with open(save_path / "parameters.json", "w") as f:
-                json.dump(ret, f, indent=4, default=str)
-            with open(ret["paths"]["results_path"] / "parameters.json", "w") as f:
-                json.dump(ret, f, indent=4, default=str)
+            if type(self.paths["baseline_policy_path"]) == list:
+                directories_to_run = []
+                for policy_file in self.paths["baseline_policy_path"]:
+                    name = policy_file.stem
+                    results_base = self.paths["results_path"] / f"{name}"
+                    directories_to_run.append(results_base)
+                    ret["paths"]["results_path"] = (
+                        results_base / f"run_{i:03d}"
+                    )
+                    ret["paths"]["baseline_policy_path"] = policy_file
+                    ret["paths"]["save_path"] = (
+                        self.paths["runs_path"] / f"{name}/run_{i:03d}"
+                    )
+                    ret["paths"]["results_path"].mkdir(exist_ok=True, parents=True)
+                    ret["paths"]["save_path"].mkdir(exist_ok=True, parents=True)
+                    with open(ret["paths"]["save_path"] / "parameters.json", "w") as f:
+                        json.dump(ret, f, indent=4, default=str)
+                    with open(
+                        ret["paths"]["results_path"] / "parameters.json", "w"
+                    ) as f:
+                        json.dump(ret, f, indent=4, default=str)
+            else:
+                directories_to_run = None
+                ret["paths"]["baseline_policy_path"] = self.paths[
+                    "baseline_policy_path"
+                ]
+                ret["paths"]["results_path"] = (
+                    self.paths["results_path"] / f"run_{i:03d}"
+                )
+                ret["paths"]["save_path"] = self.paths["runs_path"] / f"run_{i:03d}"
+                ret["paths"]["results_path"].mkdir(exist_ok=True, parents=True)
+                ret["paths"]["save_path"].mkdir(exist_ok=True, parents=True)
+                with open(ret["paths"]["save_path"] / "parameters.json", "w") as f:
+                    json.dump(ret, f, indent=4, default=str)
+                with open(ret["paths"]["results_path"] / "parameters.json", "w") as f:
+                    json.dump(ret, f, indent=4, default=str)
+        return directories_to_run
+
 
 
 if __name__ == "__main__":
@@ -152,8 +180,12 @@ if __name__ == "__main__":
         "-s", "--save", help="Store parameters file, then exit.", default=None
     )
     parser.add_argument(
-        "-d", "--copy-data", help="Copy input data to results folder", required=False,
-        default=False, action="store_true"
+        "-d",
+        "--copy-data",
+        help="Copy input data to results folder",
+        required=False,
+        default=False,
+        action="store_true",
     )
     args = parser.parse_args()
 
@@ -166,10 +198,8 @@ if __name__ == "__main__":
         parameter_generator.save_parameters_to_file(args.save)
         sys.exit()
 
-
     run_setup = RunSetup(run_configuration=config,)
     if args.copy_data:
         copy_input_data(run_setup.paths["data_path"])
-    run_setup.save_run_parameters()
-    run_setup.script_maker.write_scripts()
-
+    directories_to_run = run_setup.save_run_parameters()
+    run_setup.script_maker.write_scripts(directories_to_run)
