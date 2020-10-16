@@ -8,6 +8,7 @@ from pathlib import Path
 import june
 from june import paths
 
+
 def parse_paths(paths_configuration):
     """
     Substitutes placeholders in config.
@@ -27,7 +28,8 @@ def parse_paths(paths_configuration):
         paths_configuration["save_path"] = (
             june_runs_path / paths_configuration["run_name"]
         ).as_posix()
-    if paths_configuration.get("baseline_policy_path", "default") == "default":
+    policy_path = paths_configuration.get("baseline_policy_path", "default")
+    if policy_path == "default":
         paths_configuration["baseline_policy_path"] = (
             june_runs_path / "configuration/default_baseline_configs/policy.yaml"
         ).as_posix()
@@ -41,6 +43,9 @@ def parse_paths(paths_configuration):
             / "configuration/default_baseline_configs/simulation_config.yaml"
         ).as_posix()
     for key, value in paths_configuration.items():
+        if type(value) == list and key == "baseline_policy_path":
+            ret["baseline_policy_path"] = value
+            continue
         if "path" in key:
             if "@" in str(value):
                 names_with_placeholder.append(key)
@@ -67,6 +72,14 @@ def parse_paths(paths_configuration):
                     reconstructed.append(split)
             reconstructed = "/".join(reconstructed)
             ret[name] = Path(reconstructed)
+    if "*" in str(ret["baseline_policy_path"]):
+        # multiple policy files
+        path_split = str(ret["baseline_policy_path"]).split("/")
+        policy_folder = Path("/".join(path_split[:-1]))
+        glob_pattern = path_split[-1]
+        ret["baseline_policy_path"] = list(
+            Path(policy_folder).glob(glob_pattern)
+        )
     ret["run_name"] = paths_configuration["run_name"]
     run_name = ret["run_name"]
     if ret["save_path"].is_dir():
@@ -105,20 +118,19 @@ def memory_status(when="now"):
 
 
 def config_checks(
-    paths_configuration=None, 
-    parameter_configuration=None, 
-    system_configuration=None
+    paths_configuration=None, parameter_configuration=None, system_configuration=None
 ):
     check = "\033[33mCHECK:\033[0m\n   "
     if paths_configuration is not None:
         if paths_configuration["world_path"].exists() is False:
-            print(check,"world_path does not exist.")
+            print(check, "world_path does not exist.")
     if parameter_configuration is not None:
         if parameter_configuration.get("parameters_to_run") not in [None, "all"]:
-            print(check+"are you sure you don\'t want \"all\" parameters_to_run?")
+            print(check + 'are you sure you don\'t want "all" parameters_to_run?')
     if system_configuration is not None:
         pass
     print("\n")
+
 
 def git_checks():
     """
@@ -130,36 +142,41 @@ def git_checks():
     branch_cmd = f"git --git-dir {june_git} rev-parse --abbrev-ref HEAD".split()
     try:
         branch = (
-            subprocess.run(
-                branch_cmd, stdout=subprocess.PIPE
-            ).stdout.decode("utf-8").strip()
+            subprocess.run(branch_cmd, stdout=subprocess.PIPE)
+            .stdout.decode("utf-8")
+            .strip()
         )
         _branch = (
-            f"\033[33m{branch.upper()}\033[0m" if branch != "master" else f"{branch.upper()}"
+            f"\033[33m{branch.upper()}\033[0m"
+            if branch != "master"
+            else f"{branch.upper()}"
         )
-        branch_info = f"You\'re running JUNE on branch {_branch}"
+        branch_info = f"You're running JUNE on branch {_branch}"
     except:
         branch_info = f"Can't read git branch"
     local_SHA_cmd = f'git --git-dir {june_git} log -n 1 --format="%h"'.split()
     try:
         local_SHA = (
-            subprocess.run(
-                local_SHA_cmd, stdout=subprocess.PIPE
-            ).stdout.decode("utf-8").strip()
+            subprocess.run(local_SHA_cmd, stdout=subprocess.PIPE)
+            .stdout.decode("utf-8")
+            .strip()
         )
-        SHA_info = f"You\'re at commitID {local_SHA}"
+        SHA_info = f"You're at commitID {local_SHA}"
     except:
-        SHA_info = "Can\'t read local git SHA"
+        SHA_info = "Can't read local git SHA"
         local_SHA = "unavailable"
-    
+
     print(branch_info)
     print(SHA_info)
+
 
 def copy_input_data(new_data_path, june_data_path=None):
     if june_data_path is None:
         june_data_path = june.paths.data_path
 
     shutil.copytree(june_data_path / "input", new_data_path / "input")
-    shutil.copytree(june_data_path / "covid_real_data", new_data_path / "covid_real_data")
+    shutil.copytree(
+        june_data_path / "covid_real_data", new_data_path / "covid_real_data"
+    )
 
     return None
