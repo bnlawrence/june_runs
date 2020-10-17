@@ -1,0 +1,51 @@
+system_configuration:
+  system_to_use: cosma8
+  memory_per_job: 100 # GB
+  cpus_per_job: 128
+  extra_header_lines: []
+  extra_module_lines: []
+  extra_command_lines: ["echo \"job done\""]
+
+purpose_of_the_run: "Test variation of results for different infectivity profiles."
+random_seed: 45638635
+
+paths_configuration: # use @ as placeholder
+  run_name: "bruno_xnexp" # will be used to store results
+  june_runs_path: "auto"
+  save_path: "/cosma7/data/dp004/dc-quer1/june_results/bruno/xnexp" # if auto, it will be june_runs_path/run_name (it won't override anything)
+  world_path: "/cosma7/data/dp004/dc-quer1/june_worlds_stripped/london.hdf5" 
+  # if these are defults, they will be picked from the june_runs_path/configuration/default_baseline_configs
+  baseline_interaction_path: "default"
+  basline_policy_path: "@june_runs_path/configuration/default_baseline_configs/policy.yaml"
+  simulation_config_path: "default"
+  #virtual_env_path: "@june_runs_path/june_venv"
+
+parameter_configuration:
+  parameters_to_run: "all"
+  n_days: 60
+  sampling_type: grid # available: [latin_hypercube, grid, regular_grid]
+  parameters:
+    n_samples: 1
+    interaction:
+      betas:
+        pub       : 0.25
+        grocery   : 0.25
+        cinema    : 0.25
+        city_transport : 0.25
+        inter_city_transport : 0.25
+        hospital  : 0.25 
+        care_home : 0.25
+        company   : 0.25
+        school    : 0.25
+        household : 0.25
+        university: 0.25
+      alpha_physical : 2
+      susceptibilities:
+        "0-13" : 0.5
+        "13-150" : 1.0
+  
+    infection:
+      asymptomatic_ratio: 0.3
+      seed_strength : 1
+      infectivity_profile: xnexp
+  

@@ -19,8 +19,8 @@ class InfectionSeedSetter:
         infection_parameters = parameters["infection"]
         seed_strength = infection_parameters.get("seed_strength", None)
         age_profile = infection_parameters.get("age_profile", None)
-        seeding_start = infection_parameters.get("seeding_start", None)
-        seeding_end = infection_parameters.get("seeding_end", None)
+        seeding_start = infection_parameters.get("seeding_start", "2020-02-28")
+        seeding_end = infection_parameters.get("seeding_end", "2020-03-02")
         return cls(
             seed_strength=seed_strength,
             age_profile=age_profile,

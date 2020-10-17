@@ -1,0 +1,28 @@
+system_configuration:
+  system_to_use: hartree
+  memory_per_job: 100 # GB
+  cpus_per_job: 32
+  extra_header_lines: []
+  extra_module_lines: ["source /lustre/scafellpike/local/HT03340/hxt01/hxt28-hxt01/june_runs/june_venv/bin/activate"]
+  extra_command_lines: ["echo \"job done\""]
+
+purpose_of_the_run: "Conan is the second calibration wave after refining Charlie's parameter range"
+random_seed: "random"
+
+paths_configuration: # use @ as placeholder
+  run_name: "conan" # will be used to store results
+  june_runs_path: "auto"
+  save_path: "@june_runs_path/conan" # if auto, it will be june_runs_path/run_name (it won't override anything)
+  results_path: "@june_runs_path/conan"
+  world_path: "@june_runs_path/june_worlds/england_1310.hdf5"
+  # if these are defults, they will be picked from the june_runs_path/configuration/default_baseline_configs
+  baseline_interaction_path: "default"
+  baseline_policy_path: "@june_runs_path/configuration/run_sets/conan/policies.yaml"
+  simulation_config_path: "default"
+
+parameter_configuration:
+  parameters_to_run: "all"
+  n_days: 90
+  sampling_type: file # available: [file, latin_hypercube, grid, regular_grid]
+  parameters:
+    path: "@june_runs_path/configuration/run_sets/conan/conan_parameters.json"

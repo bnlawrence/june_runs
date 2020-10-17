@@ -1,5 +1,6 @@
 numpy==1.19.1
 pandas==1.1.0
+june==0.2.0.6
 pyDOE2
 SALib
 sklearn

@@ -1,5 +1,15 @@
 import yaml
 from pathlib import Path
+
+supported_systems = [
+    "cosma5",
+    "cosma6",
+    "cosma7",
+    "cosma8",
+    "jasmin",
+    "archer",
+    "hartree",
+]
 import getpass, os
 
 from june_runs.paths import configuration_path
@@ -19,16 +29,16 @@ class ScriptMaker:
         memory_per_job: int = 100,
         cpus_per_job: int = 32,
         number_of_jobs=250,
-        extra_header_lines = None,
-        extra_module_lines = None,
-        extra_command_lines =None,
+        extra_header_lines=None,
+        extra_module_lines=None,
+        extra_command_lines=None,
     ):
         self.system_configuration = self._load_system_configuration(system)
         self.run_directory = Path(run_directory)
         self.stdout_directory = self.run_directory / "stdout"
         self.stdout_directory.mkdir(exist_ok=True, parents=True)
         self.job_name = job_name
-       
+
         self.nodes_required = self.calculate_number_of_nodes(
             memory_per_job=memory_per_job,
             cpus_per_job=cpus_per_job,
@@ -60,37 +70,41 @@ class ScriptMaker:
         memory_nodes = total_memory / memory_per_node
         return max(cpu_nodes, memory_nodes)
 
-    def make_submission_script(self, script_number):
-        header = self.make_script_header(script_number)
+    def make_submission_script(self, script_number, output_dir, stdout_name):
+        header = self.make_script_header(
+            script_number=script_number, stdout_name=stdout_name
+        )
         modules_to_load = self.make_script_modules()
-        command = self.make_python_command(script_number)
-        return header + ["\n"] +  modules_to_load + ["\n"] + command
+        command = self.make_python_command(script_number, output_dir)
+        return header + ["\n"] + modules_to_load + ["\n"] + command
 
-    def make_running_script(self, script_number):
-        script_dir = self._get_script_dir(script_number)
-        parameters_path = script_dir / "parameters.json"
+    def make_running_script(self, output_dir):
+        parameters_path = output_dir / "parameters.json"
         python_script = [
+            "import os",
+            "os.environ['OPENBLAS_NUM_THREADS'] = '1'",
             "from june_runs import Runner\n",
-            f"runner = Runner(\"{parameters_path}\")",
+            f'runner = Runner("{parameters_path}")',
             "runner.run()",
         ]
         return python_script
 
-    def make_script_header(self, script_number):
+    def make_script_header(self, script_number, stdout_name):
         queue = self.system_configuration["queue"]
-        if 'account' in self.system_configuration: 
+        if "account" in self.system_configuration:
             account = self.system_configuration["account"]
         else:
             account = None
         max_time = self.system_configuration["max_time"]
         scheduler = self.system_configuration["scheduler"]
-        stdout_path = self.stdout_directory / f"run_{script_number:03d}"
+        stdout_path = self.stdout_directory / stdout_name
+        stdout_path.mkdir(exist_ok=True, parents=True)
         if scheduler == "slurm":
             header = [
                 "#!/bin/bash -l",
                 "",
                 f"#SBATCH --ntasks {self.cpus_per_job}",
-                f"#SBATCH -J {self.job_name}_{script_number:03d}",
+                f"#SBATCH -J {self.job_name[0:4]}_{script_number:03d}",
                 f"#SBATCH -p {queue}",
                 f"#SBATCH -o {stdout_path}.out",
                 f"#SBATCH -e {stdout_path}.err",
@@ -102,7 +116,7 @@ class ScriptMaker:
             header = [
                 "#!/bin/bash -l",
                 "",
-                f"#PBS -N {self.job_name}_{script_number:03d}",
+                f"#PBS -N {self.job_name[0:4]}_{script_number:03d}",
                 f"#PBS -l procs={self.cpus_per_job}",
                 f"#PBS -l walltime={max_time}",
                 f"#PBS -q {queue}",
@@ -117,7 +131,7 @@ class ScriptMaker:
                 f'#BSUB -R "span[ptile={self.cpus_per_job}]"',
                 # f'#BSUB -R "rusage[mem={self.memory_per_job}000]"',
                 f"#BSUB -n {self.cpus_per_job}",
-                f"#BSUB -J {self.job_name}_{script_number:03d}",
+                f"#BSUB -J {self.job_name[0:4]}_{script_number:03d}",
                 f"#BSUB -q {queue}",
                 f"#BSUB -P {account}",
                 f"#BSUB -o {stdout_path}.out",
@@ -143,9 +157,9 @@ class ScriptMaker:
             modules += self.extra_module_lines
         return modules
 
-    def make_python_command(self, script_number):
+    def make_python_command(self, script_number, output_dir):
         script_path = self._get_script_dir(script_number)
-        python_script_path = script_path / "run.py"
+        python_script_path = output_dir / "run.py"
         python_command = [
             f"mpirun -np {self.cpus_per_job} python3 -u {python_script_path}"
         ]
@@ -153,26 +167,51 @@ class ScriptMaker:
             python_command += self.extra_command_lines
         return python_command
 
-    def write_scripts(self):
+    def write_scripts(self, directories_to_run):
+        if not directories_to_run:
+            directories_to_run = [None]
         script_paths = []
-        for i in range(self.number_of_jobs):
-            submission_script = self.make_submission_script(i)
-            running_script = self.make_running_script(i)
-            save_dir = self._get_script_dir(i)
-            assert save_dir.is_dir()
-            script_path = save_dir / "submit.sh"
-            script_paths.append(script_path)
-            with open(script_path, "w") as f:
-                for line in submission_script:
-                    f.write(line + "\n")
-            with open(save_dir / "run.py", "w") as f:
-                for line in running_script:
-                    f.write(line + "\n")
+        for directory in directories_to_run:
+            for i in range(self.number_of_jobs):
+                save_dir = self._get_script_dir(i)
+                if directory is None:
+                    output_dir = save_dir / f"run_{i:03d}"
+                    stdout_name = f"run_{i:03d}"
+                else:
+                    output_dir = save_dir / f"{directory}/run_{i:03d}"
+                    directory_name = str(directory).split("/")[-1]
+                    stdout_name = f"{directory_name}/run_{i:03d}"
+                submission_script = self.make_submission_script(
+                    i, output_dir, stdout_name=stdout_name
+                )
+                running_script = self.make_running_script(output_dir)
+                script_path = output_dir / "submit.sh"
+                assert output_dir.is_dir()
+                script_paths.append(script_path)
+                with open(script_path, "w") as f:
+                    for line in submission_script:
+                        f.write(line + "\n")
+                with open(output_dir / "run.py", "w") as f:
+                    for line in running_script:
+                        f.write(line + "\n")
+                if i == 0:
+                    try:
+                        print_path = script_path.relative_to(Path.cwd())
+                    except:
+                        print_path = script_path
+                    print(f"running scripts written to eg.\n    {print_path}")
         # make script to submit all jobs
         submit_all_script = self.make_submit_all_script(script_paths)
-        with open(self.run_directory / "submit_all.sh", "w") as f:
+        all_scripts_path = self.run_directory / "submit_all.sh"
+        with open(all_scripts_path, "w") as f:
             for line in submit_all_script:
                 f.write(line + "\n")
+
+        try:
+            print_path = all_scripts_path.relative_to(Path.cwd())
+        except:
+            print_path = all_scripts_path
+        print(f"submit all scripts with:\n    \033[035mbash {print_path}\033[0m")
 
     def make_submit_all_script(self, script_paths):
         script = ["#!/bin/bash -l \n"]
@@ -187,10 +226,9 @@ class ScriptMaker:
                 submission_command = "bsub <"
             else:
                 submission_command = "bsub"
-            
+
         else:
             raise ValueError(f"Scheduler {scheduler} not yet supported.")
         for path in script_paths:
             script += [f"{submission_command} {path}"]
         return script
-
