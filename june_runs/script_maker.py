@@ -175,7 +175,7 @@ class ScriptMaker:
             for i in range(self.number_of_jobs):
                 save_dir = self._get_script_dir(i)
                 if directory is None:
-                    output_dir = save_dir / f"run_{i:03d}"
+                    output_dir = save_dir
                     stdout_name = f"run_{i:03d}"
                 else:
                     output_dir = save_dir / f"{directory}/run_{i:03d}"
